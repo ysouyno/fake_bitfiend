@@ -151,7 +151,48 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="bencode.cpp" />
+    <ClCompile Include="bitfiend.cpp" />
+    <ClCompile Include="byte_str.cpp" />
+    <ClCompile Include="dict.cpp" />
+    <ClCompile Include="dl_file.cpp" />
+    <ClCompile Include="list.cpp" />
+    <ClCompile Include="log.cpp" />
     <ClCompile Include="main.cpp" />
+    <ClCompile Include="peer_connection.cpp" />
+    <ClCompile Include="peer_id.cpp" />
+    <ClCompile Include="peer_listener.cpp" />
+    <ClCompile Include="peer_msg.cpp" />
+    <ClCompile Include="sha1.cpp" />
+    <ClCompile Include="torrent.cpp" />
+    <ClCompile Include="torrent_file.cpp" />
+    <ClCompile Include="tracker_announce.cpp" />
+    <ClCompile Include="tracker_connection.cpp" />
+    <ClCompile Include="tracker_resp_parser.cpp" />
+    <ClCompile Include="url.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="bencode.h" />
+    <ClInclude Include="bitfiend.h" />
+    <ClInclude Include="bitfiend_internal.h" />
+    <ClInclude Include="byte_str.h" />
+    <ClInclude Include="dict.h" />
+    <ClInclude Include="dl_file.h" />
+    <ClInclude Include="lbitfield.h" />
+    <ClInclude Include="list.h" />
+    <ClInclude Include="log.h" />
+    <ClInclude Include="peer.h" />
+    <ClInclude Include="peer_connection.h" />
+    <ClInclude Include="peer_id.h" />
+    <ClInclude Include="peer_listener.h" />
+    <ClInclude Include="peer_msg.h" />
+    <ClInclude Include="sha1.h" />
+    <ClInclude Include="torrent.h" />
+    <ClInclude Include="torrent_file.h" />
+    <ClInclude Include="tracker_announce.h" />
+    <ClInclude Include="tracker_connection.h" />
+    <ClInclude Include="tracker_resp_parser.h" />
+    <ClInclude Include="url.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

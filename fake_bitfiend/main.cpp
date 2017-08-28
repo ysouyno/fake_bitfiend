@@ -1,19 +1,22 @@
-#include <iostream>
-#include <pthread.h>
+#include <signal.h>
+#include <stdbool.h>
+#include "bitfiend.h"
 
-void *pthread_thread_proc(void *arg)
+static volatile bool running = true;
+
+static void sig_handler(int signum)
 {
-	std::cout << "hello pthread!" << std::endl;
-
-	return NULL;
+	running = false;
 }
 
-int main()
+int main(int argc, char **argv)
 {
-	pthread_t tid;
+	bitfiend_init();
+	bitfiend_add_torrent("C:\\Users\\ysouyno\\Desktop\\debian.torrent", "C:\\Users\\ysouyno\\Desktop");
 
-	pthread_create(&tid, NULL, pthread_thread_proc, NULL);
-	pthread_join(tid, NULL);
+	signal(SIGINT, sig_handler);
+	/*while (running)
+	;*/
 
-	return 0;
+	bitfiend_shutdown();
 }
