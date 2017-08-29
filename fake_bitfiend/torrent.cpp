@@ -53,7 +53,7 @@ static int populate_files_from_list(torrent_t *torrent, list_t *files,
 
 	char path[256];
 	strcpy(path, destdir);
-	strcat(path, "/");
+	strcat(path, "\\");
 	strcat(path, name);
 	log_printf(LOG_LEVEL_INFO, "Creating directory: %s\n", path);
 	_mkdir(path);
@@ -65,9 +65,9 @@ static int populate_files_from_list(torrent_t *torrent, list_t *files,
 
 		char path[256];
 		strcpy(path, destdir);
-		strcat(path, "/");
+		strcat(path, "\\");
 		strcat(path, name);
-		strcat(path, "/");
+		strcat(path, "\\");
 
 		FOREACH_KEY_AND_VAL(key, val, filedict)
 		{
@@ -90,7 +90,7 @@ static int populate_files_from_list(torrent_t *torrent, list_t *files,
 					if (i < list_get_size(pathlist) - 1)
 					{
 						_mkdir(path);
-						strcat(path, "/");
+						strcat(path, "\\");
 					}
 					i++;
 				}
@@ -156,7 +156,7 @@ static int populate_from_info_dic(torrent_t *torrent, dict_t *info, const char *
 	{
 		char path[256];
 		strcpy(path, destdir);
-		strcat(path, "/");
+		strcat(path, "\\");
 		strcat(path, name);
 
 		dl_file_t *file = dl_file_create_and_open(len, path);

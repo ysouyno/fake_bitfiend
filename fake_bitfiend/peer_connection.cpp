@@ -42,12 +42,24 @@ static int peer_connect(peer_arg_t *arg)
 	char ipstr[INET6_ADDRSTRLEN];
 	print_ip(&arg->peer, ipstr, sizeof(ipstr));
 
+	WORD ver = MAKEWORD(2, 2);
+	WSADATA wsa;
+
+	int rt = WSAStartup(ver, &wsa);
+	if (rt != 0)
+	{
+		printf("WSAStartup failed with error: %d\n", rt);
+		return -1;
+	}
+
 	sockfd = socket(arg->peer.addr.sas.ss_family, SOCK_STREAM/* | SOCK_NONBLOCK*/, 0);
 	if (sockfd < 0)
+	{
+		printf("socket error: %s\n", strerror(errno));
 		return sockfd;
+	}
 
-	int rt = 0;
-	u_long mode = 1; // 0 - blocking is enabled, 1 - non-blocking mode is enabled
+	u_long mode = 1; // 0 - blocking is enabled, nonzero - non-blocking mode is enabled
 
 	rt = ioctlsocket(sockfd, FIONBIO, &mode);
 	if (rt != NO_ERROR)
@@ -66,10 +78,17 @@ static int peer_connect(peer_arg_t *arg)
 		len = sizeof(arg->peer.addr.sa_in6);
 	}
 
-	int ret;
-	ret = connect(sockfd, &arg->peer.addr.sa, len);
-	if (!(ret == 0 || errno == EINPROGRESS))
+	rt = connect(sockfd, &arg->peer.addr.sa, len);
+	if (rt != 0 && WSAGetLastError() != WSAEWOULDBLOCK)
+	{
+		printf("connect error: %d\n", WSAGetLastError());
 		goto fail;
+	}
+	/*if (!(rt == 0 || errno == EINPROGRESS))
+	{
+		printf("connect return value: %d errno: %d, error: %s\n", rt, errno, strerror(errno));
+		goto fail;
+	}*/
 
 	fd_set fdset;
 	FD_ZERO(&fdset);
@@ -78,7 +97,8 @@ static int peer_connect(peer_arg_t *arg)
 	timeout.tv_sec = PEER_CONN_TIMEOUT_SEC;
 	timeout.tv_usec = 0;
 
-	if (select(sockfd + 1, NULL, &fdset, NULL, &timeout) > 0)
+	rt = select(sockfd + 1, NULL, &fdset, NULL, &timeout);
+	if (rt > 0)
 	{
 		int so_error;
 		socklen_t len = sizeof(so_error);
@@ -99,6 +119,15 @@ static int peer_connect(peer_arg_t *arg)
 	/*int opts = fcntl(sockfd, F_GETFL);
 	opts &= ~O_NONBLOCK;
 	fcntl(sockfd, F_SETFL, opts);*/
+
+	mode = 0; // 0 - blocking is enabled, nonzero - non-blocking mode is enabled
+
+	rt = ioctlsocket(sockfd, FIONBIO, &mode);
+	if (rt != NO_ERROR)
+	{
+		closesocket(sockfd);
+		return -1;
+	}
 
 	log_printf(LOG_LEVEL_INFO, "Successfully established connection to peer at: %s (sockfd: %d)\n",
 		ipstr, sockfd);
@@ -126,14 +155,12 @@ static void *peer_connection(void *arg)
 	pthread_setcancelstate(PTHREAD_CANCEL_DISABLE, NULL);
 	pthread_cleanup_push(peer_connection_cleanup, arg)
 	{
-
 		peer_arg_t *parg = (peer_arg_t*)arg;
 		char ipstr[INET6_ADDRSTRLEN];
 		print_ip(&parg->peer, ipstr, sizeof(ipstr));
 
 		int sockfd;
 		torrent_t *torrent;
-
 
 		if (parg->has_sockfd)
 		{

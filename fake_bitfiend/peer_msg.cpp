@@ -21,8 +21,6 @@ int peer_send_buff(int sockfd, const char *buff, size_t len)
 		buff += sent;
 	}
 
-	free((char *)buff);
-
 	return 0;
 }
 
@@ -102,7 +100,7 @@ int peer_send_handshake(int sockfd, char infohash[20])
 	size_t bufflen = 1 + pstrlen + sizeof(reserved) + 20 + sizeof(g_local_peer_id);
 
 	off_t off = 0;
-	char *buff = (char *)malloc(bufflen);
+	char buff[HANDSHAKE_LEN] = { 0 };
 
 	buff[0] = pstrlen;
 	off++;

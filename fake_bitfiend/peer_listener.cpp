@@ -14,7 +14,7 @@
 
 static int bind_listener(const uint16_t port)
 {
-	int sockfd;
+	int sockfd = 0;
 	struct addrinfo hints, *listener, *head;
 
 	memset(&hints, 0, sizeof(hints));

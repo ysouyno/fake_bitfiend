@@ -1,8 +1,3 @@
-#include "tracker_announce.h"
-#include "url.h"
-#include "bencode.h"
-#include "tracker_resp_parser.h"
-#include "log.h"
 #include <stdio.h>
 #include <stdbool.h>
 #include <ctype.h>
@@ -11,7 +6,11 @@
 #include <string.h>
 #include <errno.h>
 #include <sys/types.h>
-
+#include "tracker_announce.h"
+#include "url.h"
+#include "bencode.h"
+#include "tracker_resp_parser.h"
+#include "log.h"
 
 #pragma warning(disable: 4996)
 
@@ -70,7 +69,8 @@ static char *build_http_request(url_t *url, tracker_announce_request_t *request)
 	if (HAS(request, REQUEST_HAS_EVENT))
 	{
 		char *event_str;
-		switch (request->event) {
+		switch (request->event)
+		{
 		case TORRENT_EVENT_STARTED:
 			event_str = "started";
 			break;

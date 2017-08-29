@@ -15,8 +15,8 @@ int main(int argc, char **argv)
 	bitfiend_add_torrent("C:\\Users\\ysouyno\\Desktop\\debian.torrent", "C:\\Users\\ysouyno\\Desktop");
 
 	signal(SIGINT, sig_handler);
-	/*while (running)
-	;*/
+	while (running)
+	;
 
 	bitfiend_shutdown();
 }

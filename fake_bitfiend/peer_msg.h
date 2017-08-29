@@ -5,6 +5,8 @@
 #include "byte_str.h"
 #include "torrent.h"
 
+#define HANDSHAKE_LEN 128
+
 typedef enum
 {
 	MSG_KEEPALIVE = -1,

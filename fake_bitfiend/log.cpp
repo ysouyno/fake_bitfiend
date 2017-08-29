@@ -1,11 +1,12 @@
 #include <pthread.h>
 #include <stdarg.h>
 #include <time.h>
+#include <Windows.h>
 #include "log.h"
 
-static pthread_mutex_t  s_log_lock = PTHREAD_MUTEX_INITIALIZER;
-static int              s_loglevel = DEFAULT_LOG_LVL;
-static FILE            *s_logfile = NULL;
+static pthread_mutex_t s_log_lock = PTHREAD_MUTEX_INITIALIZER;
+static int s_loglevel = DEFAULT_LOG_LVL;
+static FILE *s_logfile = NULL;
 
 void log_set_lvl(log_level_t lvl)
 {
@@ -24,7 +25,7 @@ void log_set_logfile(FILE *f)
 void log_printf(log_level_t lvl, const char *fmt, ...)
 {
 	va_list args;
-	long tid = /*(long)syscall(SYS_gettid)*/1111;
+	long tid = /*(long)syscall(SYS_gettid)*/GetCurrentThreadId();
 	time_t now = time(0);
 	char timestr[9];
 
@@ -55,4 +56,3 @@ void log_printf(log_level_t lvl, const char *fmt, ...)
 
 	pthread_mutex_unlock(&s_log_lock);
 }
-

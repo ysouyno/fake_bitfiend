@@ -47,7 +47,7 @@ dl_file_t *dl_file_create_and_open(size_t size, const char *path)
 	assert(stats.st_size == size); //temp
 
 	HANDLE file_handle = CreateFileA(path, GENERIC_READ | GENERIC_WRITE,
-		FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
+		FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
 	if (INVALID_HANDLE_VALUE == file_handle)
 	{
 		printf("CreateFileA error: %d\n", GetLastError());
