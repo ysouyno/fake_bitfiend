@@ -18,7 +18,11 @@ static int bind_listener(const uint16_t port)
 	struct addrinfo hints, *listener, *head;
 
 	memset(&hints, 0, sizeof(hints));
-	hints.ai_family = AF_UNSPEC;
+
+	// accept will fail and return error 10014, because IPv6 struct size is too large
+	// so set ai_family as AF_INET, please check below for more information
+	// https://stackoverflow.com/questions/31658944/calling-accept-causes-wsaefault-10014-bad-address
+	hints.ai_family = AF_INET;
 	hints.ai_socktype = SOCK_STREAM;
 	hints.ai_flags = AI_PASSIVE;
 
@@ -128,7 +132,7 @@ static void *peer_listen(void *arg)
 
 	while (true)
 	{
-		// log_printf(LOG_LEVEL_INFO, "Listening for incoming peer connections...\n");
+		log_printf(LOG_LEVEL_INFO, "Listening for incoming peer connections...\n");
 
 		struct sockaddr peersock;
 		socklen_t len = sizeof(peersock);
@@ -140,7 +144,10 @@ static void *peer_listen(void *arg)
 		pthread_setcancelstate(PTHREAD_CANCEL_DISABLE, NULL);
 
 		if (peer_sockfd < 0)
+		{
+			printf("accept error: %d\n", WSAGetLastError());
 			continue;
+		}
 
 		log_printf(LOG_LEVEL_INFO, "Peer connection accepted (sockfd: %d)\n", peer_sockfd);
 
