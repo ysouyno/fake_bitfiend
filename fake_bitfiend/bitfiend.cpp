@@ -4,6 +4,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <assert.h>
+#include <signal.h>
 #include "bitfiend.h"
 #include "list.h"
 #include "peer_id.h"
@@ -65,6 +66,12 @@ static int shutdown_torrent(torrent_t *torrent)
 		peer_conn_t *conn = *(peer_conn_t**)(list_iter_get_value(iter));
 		void *ret;
 
+		char queue_name[64];
+		peer_connection_queue_name(conn->thread, queue_name, sizeof(queue_name));
+		// mq_unlink(queue_name);
+
+		pthread_kill(conn->thread, SIGINT);
+
 		pthread_cancel(conn->thread);
 		pthread_join(conn->thread, &ret);
 
@@ -112,6 +119,10 @@ int bitfiend_shutdown(void)
 
 		pthread_cancel(thread);
 		pthread_join(thread, NULL);
+
+		char queue_name[64];
+		peer_connection_queue_name(thread, queue_name, sizeof(queue_name));
+		// mq_unlink(queue_name);
 	}
 	list_free(s_unassoc_peerthreads);
 	pthread_mutex_unlock(&s_unassoc_peerthreads_lock);
@@ -203,11 +214,11 @@ torrent_t *bitfiend_assoc_peer(peer_conn_t *peer, char infohash[20])
 			list_add(torrent->sh.peer_connections, (unsigned char*)&peer, sizeof(peer_conn_t*));
 			ret = torrent;
 
+			pthread_mutex_unlock(&torrent->sh_lock);
+
 			pthread_mutex_lock(&s_unassoc_peerthreads_lock);
 			list_remove(s_unassoc_peerthreads, (unsigned char*)&peer->thread);
 			pthread_mutex_unlock(&s_unassoc_peerthreads_lock);
-
-			pthread_mutex_unlock(&torrent->sh_lock);
 
 			break;
 		}
@@ -225,3 +236,91 @@ void bitfiend_add_unassoc_peer(pthread_t thread)
 	pthread_mutex_unlock(&s_unassoc_peerthreads_lock);
 }
 
+HANDLE mq_open(const char *name, DWORD flags)
+{
+	HANDLE hPipe = CreateFileA(
+		name,          // pipe name 
+		GENERIC_READ | // read and write access 
+		GENERIC_WRITE,
+		0,             // no sharing 
+		NULL,          // default security attributes
+		OPEN_EXISTING, // opens existing pipe 
+		0,             // default attributes 
+		NULL);         // no template file 
+
+	if (hPipe == INVALID_HANDLE_VALUE)
+	{
+		printf("CreateFileA named pipe %s failed: %d\n", name, GetLastError());
+		return NULL;
+	}
+	else
+	{
+		printf("CreateFileA named pipe %s ok: %d\n", name);
+		return hPipe;
+	}
+}
+
+int mq_send(HANDLE queue, const char *pipe_name, const char *msg_ptr, size_t msg_len, unsigned int msg_prio)
+{
+	if (!WaitNamedPipeA(pipe_name, 20000))
+	{
+		printf("Could not open pipe: 20 second wait timed out\n");
+		CloseHandle(queue);
+		return -1;
+	}
+
+	DWORD cbWritten = 0;
+	BOOL bRet = WriteFile(
+		queue,      // pipe handle 
+		msg_ptr,    // message 
+		msg_len,    // message length 
+		&cbWritten, // bytes written 
+		NULL);      // not overlapped 
+
+	if (!bRet)
+	{
+		printf("WriteFile to pipe %s failed: %d\n", pipe_name, GetLastError());
+		CloseHandle(queue);
+		return -1;
+	}
+	else
+	{
+		printf("WriteFile sent to pipe %s ok\n", pipe_name);
+		return 0;
+	}
+}
+
+int bitfiend_notify_peers_have(torrent_t *torrent, unsigned have_index)
+{
+	int ret = 0;
+	const unsigned char *entry;
+	pthread_mutex_lock(&torrent->sh_lock);
+
+	FOREACH_ENTRY(entry, torrent->sh.peer_connections)
+	{
+		peer_conn_t *conn = *(peer_conn_t**)entry;
+
+		if (conn->thread.p == pthread_self().p)
+			continue;
+
+		char queue_name[64];
+		peer_connection_queue_name(conn->thread, queue_name, sizeof(queue_name));
+		HANDLE queue = mq_open(queue_name, 0);
+		if (queue != NULL)
+		{
+			if (mq_send(queue, queue_name, (char*)&have_index, sizeof(unsigned), 0))
+				log_printf(LOG_LEVEL_ERROR, "Failed to send have event to peer threads\n");
+
+			CloseHandle(queue);
+		}
+		else
+		{
+			ret = -1;
+			log_printf(LOG_LEVEL_ERROR, "Could not open queue for sending: %s\n", queue_name);
+		}
+	}
+
+	pthread_mutex_unlock(&torrent->sh_lock);
+
+	return ret;
+}

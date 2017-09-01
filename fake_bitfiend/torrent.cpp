@@ -11,6 +11,7 @@
 #include "log.h"
 #include "dl_file.h"
 #include "peer_connection.h"
+#include "lbitfield.h"
 
 #pragma warning(disable: 4996)
 
@@ -240,7 +241,7 @@ torrent_t *torrent_init(bencode_obj_t *meta, const char *destdir)
 
 	pthread_mutex_init(&ret->sh_lock, NULL);
 	ret->sh.peer_connections = list_init();
-	ret->sh.piece_states = (list_t *)malloc(list_get_size(ret->pieces));
+	ret->sh.piece_states = (char *)malloc(list_get_size(ret->pieces));
 	memset(ret->sh.piece_states, PIECE_STATE_NOT_REQUESTED, list_get_size(ret->pieces));
 	ret->sh.priority = DEFAULT_PRIORITY;
 	ret->sh.state = TORRENT_STATE_LEECHING;
@@ -301,10 +302,27 @@ unsigned torrent_left_to_download(torrent_t *torrent)
 	return 0;
 }
 
-char *torrent_get_filemem(torrent_t *torrent, unsigned index, size_t size)
+char *torrent_get_filemem(const torrent_t *torrent, unsigned index, size_t size)
 {
 	//TODO
 	return NULL;
+}
+
+unsigned char *torrent_make_bitfield(const torrent_t *torrent)
+{
+	unsigned num_pieces = list_get_size(torrent->pieces);
+	unsigned len = LBITFIELD_NUM_BYTES(num_pieces);
+	unsigned char *ret = (unsigned char *)calloc(len, 1);
+
+	if (!ret)
+		return ret;
+
+	for (int i = 0; i < num_pieces; i++)
+	{
+		if (torrent->sh.piece_states[i] == PIECE_STATE_HAVE)
+			LBITFIELD_SET(i, ret);
+	}
+	return ret;
 }
 
 //temp
