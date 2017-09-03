@@ -210,13 +210,13 @@ static int handshake(int sockfd, peer_arg_t *parg, char peer_id[20], char info_h
 
 		if (peer_send_handshake(sockfd, (*out)->info_hash))
 		{
-			printf("peer_send_handshake error line: %d\n", __LINE__);
+			/*printf("peer_send_handshake error line: %d\n", __LINE__);*/
 			return -1;
 		}
 
 		if (peer_recv_handshake(sockfd, info_hash, peer_id, true))
 		{
-			printf("peer_recv_handshake error line: %d\n", __LINE__);
+			/*printf("peer_recv_handshake error line: %d\n", __LINE__);*/
 			return -1;
 		}
 	}
@@ -300,16 +300,17 @@ static HANDLE peer_queue_open(DWORD flags)
 	peer_connection_queue_name(pthread_self(), queue_name, sizeof(queue_name));
 
 	ret = CreateNamedPipeA(
-		queue_name,               // pipe name 
-		PIPE_ACCESS_DUPLEX,       // read/write access 
-		PIPE_TYPE_MESSAGE |       // message type pipe 
-		PIPE_READMODE_MESSAGE |   // message-read mode 
-		flags,                    // blocking mode 
-		PIPE_UNLIMITED_INSTANCES, // max. instances  
-		1024,                     // output buffer size 
-		1024,                     // input buffer size 
-		0,                        // client time-out 
-		NULL);                    // default security attribute 
+		queue_name,               // pipe name
+		FILE_FLAG_OVERLAPPED |
+		PIPE_ACCESS_DUPLEX,       // read/write access
+		PIPE_TYPE_BYTE |          // message type pipe
+		PIPE_READMODE_BYTE |      // message-read mode
+		flags,                    // blocking mode
+		PIPE_UNLIMITED_INSTANCES, // max. instances
+		1024,                     // output buffer size
+		1024,                     // input buffer size
+		0,                        // client time-out
+		NULL);                    // default security attribute
 
 	if (ret == INVALID_HANDLE_VALUE)
 	{
@@ -366,12 +367,12 @@ static void service_have_events(int sockfd, HANDLE queue, const torrent_t *torre
 	ResetEvent(hEvent);
 
 	ConnectNamedPipe(queue, &os);
-	printf("ConnectNamedPipe got connect\n");
+	/*printf("ConnectNamedPipe got connect\n");*/
 
 	if (GetLastError() == ERROR_IO_PENDING)
 	{
-		WaitForSingleObject(hEvent, INFINITE);
-		printf("WaitForSingleObject\n");
+		WaitForSingleObject(hEvent, 0);
+		/*printf("WaitForSingleObject\n");*/
 
 		memset(&os, 0, sizeof(OVERLAPPED));
 		os.hEvent = hEvent;
@@ -458,88 +459,93 @@ static void *peer_connection(void *arg)
 {
 	pthread_setcancelstate(PTHREAD_CANCEL_DISABLE, NULL);
 	pthread_cleanup_push(peer_connection_cleanup, arg);
+
+	peer_arg_t *parg = (peer_arg_t*)arg;
+	char ipstr[INET6_ADDRSTRLEN];
+	print_ip(&parg->peer, ipstr, sizeof(ipstr));
+
+	HANDLE queue;
+	int sockfd;
+	torrent_t *torrent;
+	char peer_id[20];
+	char info_hash[20];
+	conn_state_t *state;
+
+	/* Init queue for "have" events */
+	queue = peer_queue_open(PIPE_WAIT);
+	if (queue == NULL)
+		goto fail_init;
+
+	/* Init "sockfd" */
+	if (parg->has_sockfd)
 	{
-		peer_arg_t *parg = (peer_arg_t*)arg;
-		char ipstr[INET6_ADDRSTRLEN];
-		print_ip(&parg->peer, ipstr, sizeof(ipstr));
-
-		HANDLE queue;
-		int sockfd;
-		torrent_t *torrent;
-		char peer_id[20];
-		char info_hash[20];
-		conn_state_t *state;
-
-		/* Init queue for "have" events */
-		queue = peer_queue_open(PIPE_WAIT);
-		if (queue == NULL)
+		sockfd = parg->sockfd;
+	}
+	else
+	{
+		if ((sockfd = peer_connect((peer_arg_t *)arg)) < 0)
 			goto fail_init;
 
-		/* Init "sockfd" */
-		if (parg->has_sockfd)
+		parg->sockfd = sockfd;
+		parg->has_sockfd = true;
+	}
+	if (sockfd < 0)
+		goto fail_init;
+
+	/* Handshake, intializing "torrent" */
+	if (handshake(sockfd, parg, peer_id, info_hash, &torrent))
+	{
+		/*printf("error handshake with %s\n", ipstr);*/
+		goto fail_init;
+	}
+
+	log_printf(LOG_LEVEL_INFO, "Handshake with peer %s (ID: %.*s) successful\n", ipstr, 20, peer_id);
+
+	/* Init state */
+	state = conn_state_init(torrent);
+	if (!state)
+	{
+		printf("conn_state_init failed\n");
+		goto fail_init;
+	}
+
+	pthread_cleanup_push(conn_state_cleanup, state);
+
+	peer_msg_t send_msg, recv_msg;
+	send_msg.type = MSG_KEEPALIVE;
+
+	while (true)
+	{
+		pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, NULL);
+		pthread_testcancel();
+		pthread_setcancelstate(PTHREAD_CANCEL_DISABLE, NULL);
+
+		service_have_events(sockfd, queue, torrent, state->local_have);
+
+		while (peer_msg_buff_nonempty(sockfd))
 		{
-			sockfd = parg->sockfd;
+			pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, NULL);
+			pthread_testcancel();
+			pthread_setcancelstate(PTHREAD_CANCEL_DISABLE, NULL);
+
+			peer_msg_t msg;
+			int ret;
+
+			if (ret = peer_msg_recv(sockfd, &msg, torrent))
+				goto abort_conn;
+			process_msg(&msg, state, torrent);
+			if (msg.type == MSG_BITFIELD)
+				byte_str_free(msg.payload.bitfield);
 		}
-		else
-		{
-			if ((sockfd = peer_connect((peer_arg_t *)arg)) < 0)
-				goto fail_init;
+	}
 
-			parg->sockfd = sockfd;
-			parg->has_sockfd = true;
-		}
-		if (sockfd < 0)
-			goto fail_init;
+abort_conn:
+	pthread_cleanup_pop(1);
 
-		/* Handshake, intializing "torrent" */
-		if (handshake(sockfd, parg, peer_id, info_hash, &torrent))
-		{
-			printf("error handshake with %s\n", ipstr);
-			goto fail_init;
-		}
+fail_init:
+	pthread_cleanup_pop(1);
 
-		log_printf(LOG_LEVEL_INFO, "Handshake with peer %s (ID: %.*s) successful\n", ipstr, 20, peer_id);
-
-		/* Init state */
-		state = conn_state_init(torrent);
-		if (!state)
-			goto fail_init;
-		pthread_cleanup_push(conn_state_cleanup, state);
-		{
-			peer_msg_t send_msg, recv_msg;
-			send_msg.type = MSG_KEEPALIVE;
-
-			while (true)
-			{
-				pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, NULL);
-				pthread_testcancel();
-				pthread_setcancelstate(PTHREAD_CANCEL_DISABLE, NULL);
-
-				service_have_events(sockfd, queue, torrent, state->local_have);
-
-				while (peer_msg_buff_nonempty(sockfd))
-				{
-					pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, NULL);
-					pthread_testcancel();
-					pthread_setcancelstate(PTHREAD_CANCEL_DISABLE, NULL);
-
-					peer_msg_t msg;
-					int ret;
-
-					if (ret = peer_msg_recv(sockfd, &msg, torrent))
-						goto abort_conn;
-					process_msg(&msg, state, torrent);
-					if (msg.type == MSG_BITFIELD)
-						byte_str_free(msg.payload.bitfield);
-				}
-			}
-
-		abort_conn:;
-		}pthread_cleanup_pop(1);
-	fail_init:;
-	}pthread_cleanup_pop(1);
 	pthread_exit(NULL);
-
 	return NULL;
 }
 
@@ -568,5 +574,5 @@ void peer_connection_queue_name(pthread_t thread, char *out, size_t len)
 	}
 
 	snprintf(out + plen, len - plen, "_queue");
-	printf("queue out name: %s\n", out);
+	/*printf("queue out name: %s\n", out);*/
 }
