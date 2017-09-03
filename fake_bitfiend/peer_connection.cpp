@@ -115,7 +115,7 @@ static int peer_connect(peer_arg_t *arg)
 	sockfd = socket(arg->peer.addr.sas.ss_family, SOCK_STREAM/* | SOCK_NONBLOCK*/, 0);
 	if (sockfd < 0)
 	{
-		printf("socket error: %s\n", strerror(errno));
+		printf("socket error: %d\n", WSAGetLastError());
 		return sockfd;
 	}
 
@@ -176,8 +176,9 @@ static int peer_connect(peer_arg_t *arg)
 		goto fail;
 	}
 
-	setsockopt(sockfd, SOL_SOCKET, SO_RCVTIMEO, (char *)&timeout, sizeof(timeout));
-	setsockopt(sockfd, SOL_SOCKET, SO_SNDTIMEO, (char *)&timeout, sizeof(timeout));
+	// comment out this, otherwise recv returns error code 10060, see peer_recv_buff()
+	// setsockopt(sockfd, SOL_SOCKET, SO_RCVTIMEO, (char *)&timeout, sizeof(timeout));
+	// setsockopt(sockfd, SOL_SOCKET, SO_SNDTIMEO, (char *)&timeout, sizeof(timeout));
 
 	/*int opts = fcntl(sockfd, F_GETFL);
 	opts &= ~O_NONBLOCK;
@@ -208,10 +209,16 @@ static int handshake(int sockfd, peer_arg_t *parg, char peer_id[20], char info_h
 		*out = parg->torrent;
 
 		if (peer_send_handshake(sockfd, (*out)->info_hash))
+		{
+			printf("peer_send_handshake error line: %d\n", __LINE__);
 			return -1;
+		}
 
 		if (peer_recv_handshake(sockfd, info_hash, peer_id, true))
+		{
+			printf("peer_recv_handshake error line: %d\n", __LINE__);
 			return -1;
+		}
 	}
 	else
 	{
@@ -306,12 +313,12 @@ static HANDLE peer_queue_open(DWORD flags)
 
 	if (ret == INVALID_HANDLE_VALUE)
 	{
-		printf("CreateNamedPipe %s failed, GLE = %d\n", queue_name, GetLastError());
+		printf("Failed to open queue in receiver thread %s failed: %d\n", queue_name, GetLastError());
 		return NULL;
 	}
 	else
 	{
-		printf("CreateNamedPipe %s ok\n", queue_name);
+		printf("Successfully opened message queue from receiver thread %s ok\n", queue_name);
 		return ret;
 	}
 }
@@ -486,7 +493,11 @@ static void *peer_connection(void *arg)
 
 		/* Handshake, intializing "torrent" */
 		if (handshake(sockfd, parg, peer_id, info_hash, &torrent))
+		{
+			printf("error handshake with %s\n", ipstr);
 			goto fail_init;
+		}
+
 		log_printf(LOG_LEVEL_INFO, "Handshake with peer %s (ID: %.*s) successful\n", ipstr, 20, peer_id);
 
 		/* Init state */

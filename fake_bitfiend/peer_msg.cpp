@@ -42,7 +42,15 @@ int peer_recv_buff(int sockfd, char *buff, size_t len)
 
 		nb = recv(sockfd, buff + tot_recv, len - tot_recv, 0);
 		if (nb < 0)
+		{
+			// error 10060: A connection attempt failed because the connected party
+			// did not properly respond after a period of time, or established connection
+			// failed because connected host has failed to respond.
+			// after commout setsockopt, will return error code 10054: An existing
+			// connection was forcibly closed by the remote host.
+			printf("recv error: %d, line: %d\n", WSAGetLastError(), __LINE__);
 			return -1;
+		}
 
 		tot_recv += nb;
 	} while (nb > 0 && tot_recv < len);
@@ -65,6 +73,7 @@ int peer_recv_handshake(int sockfd, char outhash[20], char outpeerid[20], bool p
 	char *buff = (char *)malloc(bufflen);
 	if (peer_recv_buff(sockfd, buff, bufflen))
 	{
+		printf("peer_recv_buff error line: %d\n", __LINE__);
 		free(buff);
 		return -1;
 	}
