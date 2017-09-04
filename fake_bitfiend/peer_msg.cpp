@@ -13,6 +13,13 @@
 
 #define MIN(a, b) ((a) < (b) ? (a) : (b))
 
+static uint32_t msgbuff_len(msg_type_t type, const torrent_t *torrent);
+static inline bool valid_len(msg_type_t type, const torrent_t *torrent, uint32_t len);
+static int peer_msg_recv_piece(int sockfd, peer_msg_t *out, const torrent_t *torrent, uint32_t len);
+static int peer_msg_recv_pastlen(int sockfd, peer_msg_t *out, const torrent_t *torrent, uint32_t len);
+static int peer_msg_send_piece(int sockfd, piece_msg_t *pmsg, const torrent_t *torrent);
+
+
 int peer_send_buff(int sockfd, const char *buff, size_t len)
 {
 	long long tot_sent = 0;
@@ -29,7 +36,10 @@ int peer_send_buff(int sockfd, const char *buff, size_t len)
 		buff += sent;
 	}
 
-	return 0;
+	if (tot_sent == len)
+		return 0;
+	else
+		return -1;
 }
 
 int peer_recv_buff(int sockfd, char *buff, size_t len)
@@ -203,6 +213,7 @@ static int peer_msg_recv_piece(int sockfd, peer_msg_t *out, const torrent_t *tor
 	FOREACH_ENTRY(entry, br->filemems)
 	{
 		filemem_t mem = *(filemem_t*)entry;
+		log_printf(LOG_LEVEL_DEBUG, "Writing %zu bytes to %p\n", mem.size, mem.mem);
 		if (peer_recv_buff(sockfd, (char *)mem.mem, mem.size))
 			goto fail_recv_piece;
 	}
@@ -216,6 +227,8 @@ fail_recv_piece:
 
 static int peer_msg_recv_pastlen(int sockfd, peer_msg_t *out, const torrent_t *torrent, uint32_t len)
 {
+	log_printf(LOG_LEVEL_INFO, "Receiving message of length: %u\n", len);
+
 	if (len == 0)
 	{
 		out->type = MSG_KEEPALIVE;
@@ -240,11 +253,19 @@ static int peer_msg_recv_pastlen(int sockfd, peer_msg_t *out, const torrent_t *t
 		/* When we get a piece, write it to the mmap'd file directly */
 	case MSG_PIECE:
 	{
-		assert(left > 0);
-		if (peer_msg_recv_piece(sockfd, out, torrent, left))
-			return -1;
-
+	case MSG_CHOKE:
+	case MSG_UNCHOKE:
+	case MSG_INTERESTED:
+	case MSG_NOT_INTERESTED:
+	{
+		assert(left == 0);
 		break;
+	}
+	assert(left > 0);
+	if (peer_msg_recv_piece(sockfd, out, torrent, left))
+		return -1;
+
+	break;
 	}
 	case MSG_BITFIELD:
 	{
@@ -311,6 +332,12 @@ static int peer_msg_recv_pastlen(int sockfd, peer_msg_t *out, const torrent_t *t
 		out->payload.listen_port = ntohl(u32);
 		break;
 	}
+	case MSG_CANCEL:
+	{
+		//TODO:
+		assert(0);
+		break;
+	}
 	default:
 		return -1;
 	}
@@ -344,6 +371,8 @@ static int peer_msg_send_piece(int sockfd, piece_msg_t *pmsg, const torrent_t *t
 				size_t membegin = (offset < pmsg->begin) ? pmsg->begin - offset : 0;
 				size_t memlen = MIN(mem.size - membegin, pmsg->blocklen - written);
 
+				log_printf(LOG_LEVEL_DEBUG, "Sending %zu bytes from %p\n", memlen, ((char*)mem.mem) + membegin);
+
 				if (peer_send_buff(sockfd, ((char*)mem.mem) + membegin, memlen))
 					goto fail_send_piece;
 
@@ -367,9 +396,8 @@ fail_send_piece:
 int peer_msg_send(int sockfd, peer_msg_t *msg, const torrent_t *torrent)
 {
 	uint32_t len = msgbuff_len(msg->type, torrent);
+	log_printf(LOG_LEVEL_INFO, "Sending message of type: %d, len: %u\n", msg->type, len);
 	len = htonl(len);
-
-	log_printf(LOG_LEVEL_INFO, "Sending message of type: %d\n", msg->type);
 
 	if (peer_send_buff(sockfd, (char*)&len, sizeof(uint32_t)))
 		return -1;
@@ -387,9 +415,8 @@ int peer_msg_send(int sockfd, peer_msg_t *msg, const torrent_t *torrent)
 	case MSG_UNCHOKE:
 	case MSG_INTERESTED:
 	case MSG_NOT_INTERESTED:
-	case MSG_CANCEL:
 	{
-		assert(len == 1);
+		assert(ntohl(len) == 1);
 		return 0;
 	}
 	case MSG_PIECE:
@@ -438,6 +465,12 @@ int peer_msg_send(int sockfd, peer_msg_t *msg, const torrent_t *torrent)
 
 		return 0;
 	}
+	case MSG_CANCEL:
+	{
+		//TODO:
+		assert(0);
+		break;
+	}
 	default:
 		return -1;
 	}
@@ -446,6 +479,8 @@ int peer_msg_send(int sockfd, peer_msg_t *msg, const torrent_t *torrent)
 int peer_msg_recv(int sockfd, peer_msg_t *out, const torrent_t *torrent)
 {
 	uint32_t len;
+	log_printf(LOG_LEVEL_DEBUG, "Receiving len of message\n");
+
 	if (peer_recv_buff(sockfd, (char*)&len, sizeof(uint32_t)))
 		return -1;
 	len = ntohl(len);
@@ -510,5 +545,13 @@ bool peer_msg_buff_nonempty(int sockfd)
 	if (n < sizeof(uint32_t))
 		return false;
 
-	return true;
+	len = ntohl(len);
+
+	u_long bytes_avail; // is that right? replace ioctl with ioctlsocket?
+	ioctlsocket(sockfd, FIONREAD, &bytes_avail);
+
+	if ((unsigned)bytes_avail >= len + sizeof(uint16_t))
+		return true;
+
+	return false;
 }
