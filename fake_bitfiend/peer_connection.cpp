@@ -347,7 +347,7 @@ static HANDLE peer_queue_open(DWORD flags)
 
 	ret = CreateNamedPipeA(
 		queue_name,               // pipe name
-		FILE_FLAG_OVERLAPPED |
+		/*FILE_FLAG_OVERLAPPED |*/
 		PIPE_ACCESS_DUPLEX,       // read/write access
 		PIPE_TYPE_BYTE |          // message type pipe
 		PIPE_READMODE_BYTE |      // message-read mode
@@ -402,6 +402,7 @@ static void service_have_events(int sockfd, HANDLE queue, const torrent_t *torre
 	char szIn[256] = { 0 };
 	DWORD cbRead = 0;
 
+	/*
 	hEvent = CreateEvent(
 		NULL,  // no security attributes
 		TRUE,  // manual reset event
@@ -413,12 +414,10 @@ static void service_have_events(int sockfd, HANDLE queue, const torrent_t *torre
 	ResetEvent(hEvent);
 
 	ConnectNamedPipe(queue, &os);
-	/*printf("ConnectNamedPipe got connect\n");*/
 
 	if (GetLastError() == ERROR_IO_PENDING)
 	{
 		WaitForSingleObject(hEvent, 0);
-		/*printf("WaitForSingleObject\n");*/
 
 		memset(&os, 0, sizeof(OVERLAPPED));
 		os.hEvent = hEvent;
@@ -456,6 +455,39 @@ static void service_have_events(int sockfd, HANDLE queue, const torrent_t *torre
 	{
 		printf("ConnectNamedPipe failed: %d\n", GetLastError());
 		CloseHandle(hEvent);
+	}
+	*/
+
+	BOOL fConnected = ConnectNamedPipe(queue, NULL) ?
+		TRUE : (GetLastError() == ERROR_PIPE_CONNECTED);
+
+	if (fConnected)
+	{
+		printf("ConnectNamedPipe got signal\n");
+
+		bRet = ReadFile(
+			queue,        // file to read from
+			szIn,         // address of input buffer
+			sizeof(szIn), // number of bytes to read
+			&cbRead,      // number of bytes read
+			&os);         // overlapped stuff, not needed
+		if (bRet)
+		{
+			msg.payload.have = have;
+			LBITFIELD_SET(have, havebf);
+			if (peer_msg_send(sockfd, &msg, torrent))
+			{
+				printf("peer_msg_send failed, line: %d\n", __LINE__);
+				CloseHandle(queue);
+			}
+
+			log_printf(LOG_LEVEL_INFO, "event serviced!: have sent to peer: %u\n", have);
+		}
+		else
+		{
+			printf("ReadFile failed, error: %d\n", GetLastError());
+			CloseHandle(queue);
+		}
 	}
 }
 
