@@ -12,15 +12,21 @@
 #include "dl_file.h"
 #include "peer_connection.h"
 #include "lbitfield.h"
+#include "piece_request.h"
 
 #pragma warning(disable: 4996)
 
-static list_t *create_piece_list(byte_str_t *raw)
+static dict_t *create_piece_dict(byte_str_t *raw);
+static int populate_files_from_list(torrent_t *torrent, list_t *files, const char *destdir, const char *name);
+static int populate_from_info_dic(torrent_t *torrent, dict_t *info, const char *destdir);
+
+static dict_t *create_piece_dict(byte_str_t *raw)
 {
-	const unsigned char *entry;
-	list_t *ret = list_init();
+	assert(raw->size % 20 == 0);
+	printf("size: %zu\n", raw->size / 20);
+	dict_t *ret = dict_init(raw->size / 20);
 	if (!ret)
-		goto fail_alloc_list;
+		goto fail_alloc_dict;
 
 	assert(raw->size % 20 == 0);
 	for (size_t i = 0; i < raw->size; i += 20)
@@ -28,18 +34,23 @@ static list_t *create_piece_list(byte_str_t *raw)
 		byte_str_t *entry = byte_str_new(20, raw->str + i);
 		if (!entry)
 			goto fail_alloc_str;
-		list_add(ret, (unsigned char*)&entry, sizeof(byte_str_t*));
+		char key[9];
+		dict_key_for_uint32(i, key, sizeof(key));
+		dict_add(ret, key, (unsigned char*)&entry, sizeof(byte_str_t*));
 	}
 
 	return ret;
 
-fail_alloc_str:
-	FOREACH_ENTRY(entry, ret)
+fail_alloc_str:;
+	const char *key;
+	const unsigned char *val;
+	FOREACH_KEY_AND_VAL(key, val, ret)
 	{
-		byte_str_free(*(byte_str_t**)entry);
+		byte_str_free(*(byte_str_t**)val);
 	}
-	list_free(ret);
-fail_alloc_list:
+	dict_free(ret);
+
+fail_alloc_dict:
 	return NULL;
 }
 
@@ -64,7 +75,7 @@ static int populate_files_from_list(torrent_t *torrent, list_t *files,
 		dict_t *filedict = (*(bencode_obj_t**)entry)->data.dictionary;
 		unsigned len;
 
-		char path[256];
+		char path[512];
 		strcpy(path, destdir);
 		strcat(path, "\\");
 		strcat(path, name);
@@ -130,7 +141,7 @@ static int populate_from_info_dic(torrent_t *torrent, dict_t *info, const char *
 	{
 		if (!strcmp(key, "pieces"))
 		{
-			torrent->pieces = create_piece_list((*(bencode_obj_t**)val)->data.string);
+			torrent->pieces = create_piece_dict((*(bencode_obj_t**)val)->data.string);
 		}
 
 		if (!strcmp(key, "piece length"))
@@ -241,8 +252,8 @@ torrent_t *torrent_init(bencode_obj_t *meta, const char *destdir)
 
 	pthread_mutex_init(&ret->sh_lock, NULL);
 	ret->sh.peer_connections = list_init();
-	ret->sh.piece_states = (char *)malloc(list_get_size(ret->pieces));
-	memset(ret->sh.piece_states, PIECE_STATE_NOT_REQUESTED, list_get_size(ret->pieces));
+	ret->sh.piece_states = (char *)malloc(dict_get_size(ret->pieces));
+	memset(ret->sh.piece_states, PIECE_STATE_NOT_REQUESTED, dict_get_size(ret->pieces));
 	ret->sh.priority = DEFAULT_PRIORITY;
 	ret->sh.state = TORRENT_STATE_LEECHING;
 	ret->sh.progress = 0.0f;
@@ -260,15 +271,16 @@ fail_alloc:
 
 void torrent_free(torrent_t *torrent)
 {
+	const char *key;
 	const unsigned char *entry;
 
 	pthread_mutex_destroy(&torrent->sh_lock);
 
-	FOREACH_ENTRY(entry, torrent->pieces)
+	FOREACH_KEY_AND_VAL(key, entry, torrent->pieces)
 	{
 		byte_str_free(*(byte_str_t**)entry);
 	}
-	list_free(torrent->pieces);
+	dict_free(torrent->pieces);
 	if (torrent->sh.piece_states)
 		free(torrent->sh.piece_states);
 
@@ -304,7 +316,7 @@ unsigned torrent_left_to_download(torrent_t *torrent)
 
 unsigned char *torrent_make_bitfield(const torrent_t *torrent)
 {
-	unsigned num_pieces = list_get_size(torrent->pieces);
+	unsigned num_pieces = dict_get_size(torrent->pieces);
 	unsigned len = LBITFIELD_NUM_BYTES(num_pieces);
 	unsigned char *ret = (unsigned char *)calloc(len, 1);
 
@@ -321,6 +333,20 @@ unsigned char *torrent_make_bitfield(const torrent_t *torrent)
 
 bool torrent_sha1_verify(const torrent_t *torrent, unsigned index)
 {
+	assert(index < dict_get_size(torrent->pieces));
+
+	char key[9];
+	dict_key_for_uint32(index, key, sizeof(key));
+	byte_str_t *piece_hash = *(byte_str_t**)dict_get(torrent->pieces, key);
+	printf("SHA1 of piece %u:\n", index);
+	for (int i = 0; i < 20; i++) {
+		printf("%02X", (unsigned char)piece_hash->str[i]);
+	}
+	printf("\n");
+
+	piece_request_t *pr = piece_request_create(torrent, index);
+	//TODO: need sha1 update, compute hash from potentially many diff files
+
 	return false;
 }
 
@@ -328,7 +354,7 @@ bool torrent_sha1_verify(const torrent_t *torrent, unsigned index)
 void print_torrent(torrent_t *torrent)
 {
 	printf("TORRENT DETAILS:\n");
-	printf("\tpieces: %p, size: %u\n", torrent->pieces, list_get_size(torrent->pieces));
+	printf("\tpieces: %p, size: %u\n", torrent->pieces, dict_get_size(torrent->pieces));
 	printf("\tpiece len: %u\n", torrent->piece_len);
 	printf("\tfiles: %p, size: %u\n", torrent->files, list_get_size(torrent->files));
 	printf("\tpeer connections: %p, size: %u\n", torrent->sh.peer_connections,

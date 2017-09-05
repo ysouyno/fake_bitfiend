@@ -12,6 +12,11 @@ int dict_add(dict_t *dict, const char *key, unsigned char *data, size_t size);
 unsigned char *dict_get(dict_t *dict, const char *key);
 void *dict_remove(dict_t *dict, const char *key);
 void dict_rehash(dict_t *dict, size_t newsize);
+unsigned dict_get_size(dict_t *dict);
+
+/* Gives a unique 8-char ascii string for each uint32_t, allowing to use uint32_t as keys,
+* should not be mixed with arbitrary string keys in a single dict */
+void dict_key_for_uint32(unsigned int key, char *out, size_t len);
 
 typedef struct dict_iter dict_iter_t;
 

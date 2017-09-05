@@ -27,7 +27,7 @@ dl_file_t *dl_file_create_and_open(size_t size, const char *path)
 	int fd;
 	struct stat stats;
 
-	char newpath[256];
+	char newpath[512];
 	strcpy(newpath, path);
 	strcat(newpath, ".incomplete");
 
