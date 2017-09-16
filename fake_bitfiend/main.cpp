@@ -2,6 +2,8 @@
 #include <stdbool.h>
 #include "bitfiend.h"
 
+#pragma comment(lib, "ws2_32.lib")
+
 static volatile bool running = true;
 
 static void sig_handler(int signum)
