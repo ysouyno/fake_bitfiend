@@ -184,6 +184,10 @@ static uint32_t msgbuff_len(msg_type_t type, const torrent_t *torrent)
 
 static inline bool valid_len(msg_type_t type, const torrent_t *torrent, uint32_t len)
 {
+	if (type == MSG_PIECE)
+		return (len >= (1 + 2 * sizeof(uint32_t) + 1)) &&
+		(len <= (1 + 2 * sizeof(uint32_t) + PEER_REQUEST_SIZE));
+
 	return (len == msgbuff_len(type, torrent));
 }
 

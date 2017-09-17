@@ -50,7 +50,8 @@ static void service_have_events(int sockfd, HANDLE queue, const torrent_t *torre
 static void service_peer_requests(int sockfd, const conn_state_t *state, const torrent_t *torrent);
 static int process_queued_msgs(int sockfd, torrent_t *torrent, conn_state_t *state);
 static void process_msg(int sockfd, peer_msg_t *msg, conn_state_t *state, torrent_t *torrent);
-static void process_piece_msg(conn_state_t *state, piece_msg_t *msg, const torrent_t *torrent);
+static void process_piece_msg(int sockfd, conn_state_t *state, piece_msg_t *msg, torrent_t *torrent);
+static void handle_piece_dl_completion(int sockfd, torrent_t *torrent, unsigned index);
 static int send_requests(int sockfd, conn_state_t *state, torrent_t *torrent);
 static void choke(int sockfd, conn_state_t *state, const torrent_t *torrent);
 static void unchoke(int sockfd, conn_state_t *state, const torrent_t *torrent);
@@ -347,7 +348,7 @@ static HANDLE peer_queue_open(DWORD flags)
 
 	ret = CreateNamedPipeA(
 		queue_name,               // pipe name
-		/*FILE_FLAG_OVERLAPPED |*/
+								  /*FILE_FLAG_OVERLAPPED |*/
 		PIPE_ACCESS_DUPLEX,       // read/write access
 		PIPE_TYPE_BYTE |          // message type pipe
 		PIPE_READMODE_BYTE |      // message-read mode
@@ -404,10 +405,10 @@ static void service_have_events(int sockfd, HANDLE queue, const torrent_t *torre
 
 	/*
 	hEvent = CreateEvent(
-		NULL,  // no security attributes
-		TRUE,  // manual reset event
-		FALSE, // not-signalled
-		NULL); // no name
+	NULL,  // no security attributes
+	TRUE,  // manual reset event
+	FALSE, // not-signalled
+	NULL); // no name
 
 	memset(&os, 0, sizeof(OVERLAPPED));
 	os.hEvent = hEvent;
@@ -417,44 +418,44 @@ static void service_have_events(int sockfd, HANDLE queue, const torrent_t *torre
 
 	if (GetLastError() == ERROR_IO_PENDING)
 	{
-		WaitForSingleObject(hEvent, 0);
+	WaitForSingleObject(hEvent, 0);
 
-		memset(&os, 0, sizeof(OVERLAPPED));
-		os.hEvent = hEvent;
-		ResetEvent(hEvent);
+	memset(&os, 0, sizeof(OVERLAPPED));
+	os.hEvent = hEvent;
+	ResetEvent(hEvent);
 
-		bRet = ReadFile(
-			queue,        // file to read from
-			szIn,         // address of input buffer
-			sizeof(szIn), // number of bytes to read
-			&cbRead,      // number of bytes read
-			&os);         // overlapped stuff, not needed
+	bRet = ReadFile(
+	queue,        // file to read from
+	szIn,         // address of input buffer
+	sizeof(szIn), // number of bytes to read
+	&cbRead,      // number of bytes read
+	&os);         // overlapped stuff, not needed
 
-		if (!bRet && (GetLastError() == ERROR_IO_PENDING))
-		{
-			printf("WaitForSingleObject INFINITE\n");
-			WaitForSingleObject(hEvent, INFINITE);
+	if (!bRet && (GetLastError() == ERROR_IO_PENDING))
+	{
+	printf("WaitForSingleObject INFINITE\n");
+	WaitForSingleObject(hEvent, INFINITE);
 
-			msg.payload.have = have;
-			LBITFIELD_SET(have, havebf);
-			if (peer_msg_send(sockfd, &msg, torrent))
-			{
-				CloseHandle(hEvent);
-			}
+	msg.payload.have = have;
+	LBITFIELD_SET(have, havebf);
+	if (peer_msg_send(sockfd, &msg, torrent))
+	{
+	CloseHandle(hEvent);
+	}
 
-			log_printf(LOG_LEVEL_INFO, "event serviced!: have sent to peer: %u\n", have);
-			CloseHandle(hEvent);
-		}
-		else
-		{
-			printf("ReadFile failed: %d\n", GetLastError());
-			CloseHandle(hEvent);
-		}
+	log_printf(LOG_LEVEL_INFO, "event serviced!: have sent to peer: %u\n", have);
+	CloseHandle(hEvent);
 	}
 	else
 	{
-		printf("ConnectNamedPipe failed: %d\n", GetLastError());
-		CloseHandle(hEvent);
+	printf("ReadFile failed: %d\n", GetLastError());
+	CloseHandle(hEvent);
+	}
+	}
+	else
+	{
+	printf("ConnectNamedPipe failed: %d\n", GetLastError());
+	CloseHandle(hEvent);
 	}
 	*/
 
@@ -491,11 +492,47 @@ static void service_have_events(int sockfd, HANDLE queue, const torrent_t *torre
 	}
 }
 
-static void process_piece_msg(conn_state_t *state, piece_msg_t *msg, const torrent_t *torrent)
+static void handle_piece_dl_completion(int sockfd, torrent_t *torrent, unsigned index)
 {
-	/* The block got written to the underlying file(s) already from tcp buffer by the recv routine.
-	* Here we check if we've gotten a complete piece so far, verify it by the SHA1 hash if so,
-	* and update the torrent state*/
+	bool completed = false;
+	unsigned pieces_left;
+	pthread_mutex_lock(&torrent->sh_lock);
+	if (torrent->sh.piece_states[index] != PIECE_STATE_HAVE)
+	{
+		torrent->sh.piece_states[index] = PIECE_STATE_HAVE;
+		torrent->sh.pieces_left--;
+
+		if (torrent->sh.pieces_left == 0)
+		{
+			torrent->sh.completed = true;
+			completed = true;
+		}
+	}
+	pieces_left = torrent->sh.pieces_left;
+
+	pthread_mutex_unlock(&torrent->sh_lock);
+
+	log_printf(LOG_LEVEL_DEBUG, "PIECES LEFT: %u\n", pieces_left);
+
+	if (completed)
+	{
+		log_printf(LOG_LEVEL_INFO, "********************************\n");
+		log_printf(LOG_LEVEL_INFO, "Torrent successfully downloaded!\n");
+		log_printf(LOG_LEVEL_INFO, "********************************\n");
+	}
+
+	peer_msg_t tosend;
+	tosend.type = MSG_HAVE;
+	tosend.payload.have = index;
+	peer_msg_send(sockfd, &tosend, torrent);
+
+	bitfiend_notify_peers_have(torrent, index);
+}
+
+static void process_piece_msg(int sockfd, conn_state_t *state, piece_msg_t *msg, torrent_t *torrent)
+{
+	/* The block got written to the underlying file(s) already from tcp buffer, from here on
+	* we just verify it by SHA1 and update torrent state if necessary */
 
 	const unsigned char *entry;
 	FOREACH_ENTRY(entry, state->local_requests)
@@ -522,7 +559,26 @@ static void process_piece_msg(conn_state_t *state, piece_msg_t *msg, const torre
 				/*We've got the entire piece!*/
 				log_printf(LOG_LEVEL_INFO, "Got a piece fam!\n");
 				bool valid = torrent_sha1_verify(torrent, curr->piece_index);
+
+				if (!valid)
+				{
+					log_printf(LOG_LEVEL_WARNING, "Piece downloaded does not have an expected SHA1 hash\n");
+
+					pthread_mutex_lock(&torrent->sh_lock);
+					torrent->sh.piece_states[curr->piece_index] = PIECE_STATE_NOT_REQUESTED;
+					pthread_mutex_unlock(&torrent->sh_lock);
+				}
+				else
+				{
+					log_printf(LOG_LEVEL_INFO, "Successfully downloaded a piece %u\n", curr->piece_index);
+					handle_piece_dl_completion(sockfd, torrent, curr->piece_index);
+				}
+
+				piece_request_free(curr);
+				list_remove(state->local_requests, (unsigned char*)&curr);
 			}
+
+			return;
 		}
 	}
 }
@@ -565,17 +621,17 @@ static void process_msg(int sockfd, peer_msg_t *msg, conn_state_t *state, torren
 			}
 		}
 
+		pthread_mutex_unlock(&torrent->sh_lock);
+
 		if (interested)
 			show_interested(sockfd, state, torrent);
-
-		pthread_mutex_unlock(&torrent->sh_lock);
 
 		break;
 	case MSG_REQUEST:
 		queue_push(state->peer_requests, &msg->payload.request);
 		break;
 	case MSG_PIECE:
-		process_piece_msg(state, &msg->payload.piece, torrent);
+		process_piece_msg(sockfd, state, &msg->payload.piece, torrent);
 		break;
 	case MSG_CANCEL:
 		/*Remove the request from the request queue */
@@ -631,10 +687,19 @@ static int send_requests(int sockfd, conn_state_t *state, torrent_t *torrent)
 	if (n <= 0)
 		return 0;
 
-	//TODO: fix selection algorithm & update torrent state that piece is requested
 	for (int i = 0; i < n; i++)
 	{
-		piece_request_t *request = piece_request_create(torrent, i);
+		unsigned req_index;
+		/* torrent->sh_lock held inside torrent_have_next */
+		if (torrent_next_request(torrent, state->peer_have, &req_index))
+		{
+			log_printf(LOG_LEVEL_INFO, "Not found a piece we can request...\n");
+			break;
+		}
+
+		log_printf(LOG_LEVEL_INFO, "Sending request for piece %u\n", req_index);
+
+		piece_request_t *request = piece_request_create(torrent, req_index);
 		list_add(state->local_requests, (unsigned char*)&request, sizeof(piece_request_t*));
 
 		const unsigned char *entry;

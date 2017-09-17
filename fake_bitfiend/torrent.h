@@ -37,6 +37,7 @@ typedef struct torrent
 	{
 		torrent_state_t state;
 		char *piece_states;
+		unsigned pieces_left;
 		list_t *peer_connections;
 		unsigned priority;   /* [0-6] */
 		float progress;      /* [0-1] */
@@ -54,5 +55,7 @@ void torrent_free(torrent_t *torrent);
 unsigned torrent_left_to_download(torrent_t *torrent);
 unsigned char *torrent_make_bitfield(const torrent_t *torrent);
 bool torrent_sha1_verify(const torrent_t *torrent, unsigned index);
+/* sh_lock of torrent is taken in this function */
+int torrent_next_request(torrent_t *torrent, unsigned char *peer_have_bf, unsigned *out);
 
 #endif
