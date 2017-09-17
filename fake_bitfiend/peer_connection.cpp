@@ -777,9 +777,10 @@ static void *peer_connection(void *arg)
 	{
 		pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, NULL);
 		pthread_testcancel();
+		Sleep(1000);
 		pthread_setcancelstate(PTHREAD_CANCEL_DISABLE, NULL);
 
-		service_have_events(sockfd, queue, torrent, state->local_have);
+		// service_have_events(sockfd, queue, torrent, state->local_have);
 
 		/* Cancellation point in this func also, will update state based on message contents */
 		if (process_queued_msgs(sockfd, torrent, state))

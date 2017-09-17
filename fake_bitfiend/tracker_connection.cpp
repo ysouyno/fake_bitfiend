@@ -157,7 +157,7 @@ static void *periodic_announce(void *arg)
 
 		pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, NULL);
 		/* Cancellation point */
-		Sleep(interval);
+		Sleep(interval * 1000);
 		pthread_setcancelstate(PTHREAD_CANCEL_DISABLE, NULL);
 
 	}

@@ -250,9 +250,6 @@ static int peer_msg_recv_pastlen(int sockfd, peer_msg_t *out, const torrent_t *t
 
 	switch (type)
 	{
-		/* When we get a piece, write it to the mmap'd file directly */
-	case MSG_PIECE:
-	{
 	case MSG_CHOKE:
 	case MSG_UNCHOKE:
 	case MSG_INTERESTED:
@@ -261,11 +258,14 @@ static int peer_msg_recv_pastlen(int sockfd, peer_msg_t *out, const torrent_t *t
 		assert(left == 0);
 		break;
 	}
-	assert(left > 0);
-	if (peer_msg_recv_piece(sockfd, out, torrent, left))
-		return -1;
+	/* When we get a piece, write it to the mmap'd file directly */
+	case MSG_PIECE:
+	{
+		assert(left > 0);
+		if (peer_msg_recv_piece(sockfd, out, torrent, left))
+			return -1;
 
-	break;
+		break;
 	}
 	case MSG_BITFIELD:
 	{

@@ -176,7 +176,7 @@ void SHA1Transform(uint32_t state[5], const unsigned char buffer[64])
 sha1_context_t *sha1_context_init(void)
 {
 	/* SHA1 initialization constants */
-	sha1_context_t *context = (sha1_context_t *)malloc(sizeof(sha1_context_t *));
+	sha1_context_t *context = (sha1_context_t *)malloc(sizeof(sha1_context_t));
 	context->state[0] = 0x67452301;
 	context->state[1] = 0xEFCDAB89;
 	context->state[2] = 0x98BADCFE;
