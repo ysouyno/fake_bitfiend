@@ -14,6 +14,15 @@
 
 #pragma warning(disable: 4996)
 
+static bool is_valid_url_char(const unsigned char c);
+static int print_url_encoded_char(char *out, size_t n, unsigned char c);
+static int print_url_encoded_str(char *out, size_t n, const unsigned char *orig, size_t olen);
+static char *build_http_request(url_t *url, tracker_announce_request_t *request);
+static byte_str_t *content_from_chunked(char *buff);
+static byte_str_t *content_from_tracker_resp(char *buff, size_t len);
+static int tracker_sendall(int sockfd, const char *buff, size_t len);
+static int tracker_recv_resp(int sockfd, byte_str_t **outcont);
+
 static bool is_valid_url_char(const unsigned char c)
 {
 	return isdigit(c) || isalpha(c) || (c == '.') || (c == '-') || (c == '_') || (c == '~');
@@ -173,11 +182,35 @@ fail_getaddrinfo:
 	return -1;
 }
 
+static byte_str_t *content_from_chunked(char *buff)
+{
+	char newbuff[2048];
+	char *line, *saveptr;
+	size_t chunk_sz;
+	size_t newsize = 0;
+
+	line = strtok_s(buff, "\r\n", &saveptr);
+	chunk_sz = strtoul(line, (char**)NULL, 16);
+	while (chunk_sz > 0)
+	{
+		line = strtok_s(NULL, "\r\n", &saveptr);
+		memcpy(newbuff + newsize, line, chunk_sz);
+		newsize += chunk_sz;
+
+		line = strtok_s(NULL, "\r\n", &saveptr);
+		chunk_sz = strtoul(line, (char**)NULL, 16);
+	}
+
+	byte_str_t *ret = byte_str_new(newsize, (const unsigned char *)newbuff);
+	return ret;
+}
+
 static byte_str_t *content_from_tracker_resp(char *buff, size_t len)
 {
 	char *line, *saveptr;
 	char *token, *saveptrtok;
 	unsigned cont_len = 0;
+	bool chunked = false;
 
 	line = strtok_s(buff, "\n", &saveptr);
 	if (strncmp(line, "HTTP/1.0 200 OK", strlen("HTTP/1.0 200 OK")) &&
@@ -188,6 +221,11 @@ static byte_str_t *content_from_tracker_resp(char *buff, size_t len)
 	{
 		line = strtok_s(NULL, "\n", &saveptr);
 
+		if (!strncmp(line, "Transfer-Encoding: chunked", strlen("Transfer-Encoding: chunked")))
+		{
+			chunked = true;
+		}
+
 		if (!strncmp(line, "Content-Length:", strlen("Content-Length:")))
 		{
 			token = strtok_s(line, ":", &saveptrtok);
@@ -197,8 +235,14 @@ static byte_str_t *content_from_tracker_resp(char *buff, size_t len)
 
 	} while (strlen(line) != 1);
 
-	byte_str_t *ret = byte_str_new(cont_len, (const unsigned char *)(line + strlen(line) + 1));
-	return ret;
+	if (chunked)
+	{
+		return content_from_chunked(line + strlen(line) + 1);
+	}
+	else
+	{
+		return byte_str_new(cont_len, (const unsigned char *)(line + strlen(line) + 1));
+	}
 
 fail_parse:
 	log_printf(LOG_LEVEL_ERROR, "Tracker returned non-OK HTTP response\n");
