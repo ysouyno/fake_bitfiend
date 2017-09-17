@@ -526,7 +526,7 @@ static void handle_piece_dl_completion(int sockfd, torrent_t *torrent, unsigned 
 	tosend.payload.have = index;
 	peer_msg_send(sockfd, &tosend, torrent);
 
-	bitfiend_notify_peers_have(torrent, index);
+	/*bitfiend_notify_peers_have(torrent, index);*/
 }
 
 static void process_piece_msg(int sockfd, conn_state_t *state, piece_msg_t *msg, torrent_t *torrent)
