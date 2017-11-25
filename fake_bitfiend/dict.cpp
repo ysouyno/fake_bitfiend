@@ -36,8 +36,8 @@ typedef struct dict_entry
 		struct dict_iter iter;
 	};
 	char *key;
-	size_t size;
-	unsigned char value[];
+	size_t size; // size of value[]
+	unsigned char value[]; // address of bencode_obj_t
 }dict_entry_t;
 
 struct dict
@@ -75,7 +75,7 @@ static void dict_entry_free(dict_entry_t *entry)
 }
 
 // DICT ENTRY END
-
+// sum = "anno" + "unce" = 0x6f6e6e61 + 0x65636e75 = 0xd4d1dcd6
 static unsigned hashf(size_t binsize, const char *key)
 {
 	long sum = 0;
@@ -133,6 +133,7 @@ void dict_free(dict_t *dict)
 	free(dict);
 }
 
+// param [data] is a pointers to pointers
 int dict_add(dict_t *dict, const char *key, unsigned char *data, size_t size)
 {
 	unsigned hash = hashf(dict->binsize, key);

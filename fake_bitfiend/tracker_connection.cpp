@@ -1,7 +1,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdbool.h>
-#include <stdio.h> //temp
+#include <stdio.h> // temp
 #include "tracker_connection.h"
 #include "torrent.h"
 #include "byte_str.h"

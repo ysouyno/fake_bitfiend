@@ -11,7 +11,7 @@ static bencode_obj_t *bencode_parse_dict(const char *benc, const char **endptr);
 static bencode_obj_t *bencode_parse_list(const char *benc, const char **endptr);
 void print_obj(bencode_obj_t *obj); //TEMP
 
-static bencode_obj_t *bencode_obj_create(void)
+static bencode_obj_t *bencode_obj_create()
 {
 	bencode_obj_t *ret = (bencode_obj_t *)malloc(sizeof(bencode_obj_t));
 	memset(ret->sha1, 0, DIGEST_LEN);

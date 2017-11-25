@@ -13,8 +13,8 @@
 
 typedef struct torrent_file
 {
-	HANDLE fd;
-	size_t size;
+	HANDLE fd; // file handle
+	size_t size; // file size
 	unsigned char *data;
 }torrent_file_t;
 
@@ -96,13 +96,14 @@ bencode_obj_t *torrent_file_parse(const char *path)
 	torrent_file_t *file;
 	bencode_obj_t *ret;
 
+	// get file.torrent info
 	file = torrent_file_open(path);
 	if (!file)
 		goto fail_open;
 
 	const char *endptr;
 	ret = bencode_parse_object((const char *)(file->data), &endptr);
-	assert(endptr = (const char *)(file->data) + file->size);
+	assert(endptr == (const char *)(file->data) + file->size);
 
 	torrent_file_close_and_free(file);
 	return ret;
