@@ -188,7 +188,7 @@ tracker_announce_resp_t *tracker_resp_parse(const byte_str_t *raw)
 
 		if (!strcmp(key, "peers_ipv6"))
 		{
-			//TODO
+			// TODO
 			assert(0);
 		}
 	}

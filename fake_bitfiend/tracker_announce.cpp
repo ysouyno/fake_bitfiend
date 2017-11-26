@@ -95,7 +95,7 @@ static char *build_http_request(url_t *url, tracker_announce_request_t *request)
 		written += snprintf(buff + written, sizeof(buff) - written, "&event=%s", event_str);
 	}
 
-#if 0 //TODO
+#if 0 // TODO
 	if (HAS(request, REQUEST_HAS_IP))
 	{
 	}
@@ -127,12 +127,13 @@ static char *build_http_request(url_t *url, tracker_announce_request_t *request)
 	{
 		strcpy(ret, buff);
 	}
+
 	return ret;
 }
 
 static int tracker_connect(url_t *url)
 {
-	struct addrinfo hints, *tracker, *head;;
+	struct addrinfo hints, *tracker, *head;
 	int sockfd;
 
 	memset(&hints, 0, sizeof(struct addrinfo));
@@ -232,7 +233,6 @@ static byte_str_t *content_from_tracker_resp(char *buff, size_t len)
 			token = strtok_s(NULL, ":", &saveptrtok);
 			cont_len = strtoul(token, NULL, 0);
 		}
-
 	} while (strlen(line) != 1);
 
 	if (chunked)
@@ -303,7 +303,7 @@ tracker_announce_resp_t *tracker_announce(const char *urlstr, tracker_announce_r
 
 	if (url->protocol == PROTOCOL_HTTPS || url->protocol == PROTOCOL_UDP)
 	{
-		//TODO
+		// TODO
 		log_printf(LOG_LEVEL_ERROR, "No support for HTTPS or UDP tracker protocols\n");
 		goto fail_protocol;
 	}

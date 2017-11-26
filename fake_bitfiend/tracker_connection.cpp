@@ -53,6 +53,7 @@ static int create_peer_connection(peer_t *peer, torrent_t *torrent)
 		free(conn);
 		return -1;
 	}
+
 	arg->torrent = torrent;
 	arg->has_torrent = true;
 	arg->has_sockfd = false;
@@ -133,7 +134,7 @@ static void *periodic_announce(void *arg)
 
 		if (resp)
 		{
-			//temp
+			// temp
 			extern void print_tracker_response(tracker_announce_resp_t *resp);
 			print_tracker_response(resp);
 			interval = resp->interval;
@@ -159,7 +160,6 @@ static void *periodic_announce(void *arg)
 		/* Cancellation point */
 		Sleep(interval * 1000);
 		pthread_setcancelstate(PTHREAD_CANCEL_DISABLE, NULL);
-
 	}
 
 	pthread_cleanup_pop(0);

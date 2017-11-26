@@ -75,7 +75,8 @@ static int torrent_file_close_and_free(torrent_file_t *file)
 	/*if(munmap(file->data, file->size))
 	goto fail;*/
 
-	if (UnmapViewOfFile(file->data))
+	// If UnmapViewOfFile succeeds, the return value is nonzero.
+	if (!UnmapViewOfFile(file->data))
 	{
 		goto fail;
 	}

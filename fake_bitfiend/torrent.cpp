@@ -329,6 +329,7 @@ unsigned char *torrent_make_bitfield(const torrent_t *torrent)
 		if (torrent->sh.piece_states[i] == PIECE_STATE_HAVE)
 			LBITFIELD_SET(i, ret);
 	}
+
 	return ret;
 }
 

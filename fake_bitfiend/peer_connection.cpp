@@ -302,7 +302,7 @@ static int handshake(int sockfd, peer_arg_t *parg, char peer_id[20], char info_h
 
 static void peer_connection_cleanup(void *arg)
 {
-	peer_arg_t *parg = (peer_arg_t*)arg;
+	peer_arg_t *parg = (peer_arg_t *)arg;
 	char ipstr[INET6_ADDRSTRLEN];
 	print_ip(&parg->peer, ipstr, sizeof(ipstr));
 
@@ -311,6 +311,7 @@ static void peer_connection_cleanup(void *arg)
 		shutdown(parg->sockfd, SD_BOTH);
 		closesocket(parg->sockfd);
 	}
+
 	log_printf(LOG_LEVEL_INFO, "Closed peer connection: %s\n", ipstr);
 	free(arg);
 }
@@ -603,6 +604,7 @@ static void process_msg(int sockfd, peer_msg_t *msg, conn_state_t *state, torren
 		break;
 	case MSG_NOT_INTERESTED:
 		state->remote.interested = false;
+		break;
 	case MSG_HAVE:
 		LBITFIELD_SET(msg->payload.have, state->peer_have);
 		break;
@@ -801,32 +803,27 @@ static void *peer_connection(void *arg)
 		parg->sockfd = sockfd;
 		parg->has_sockfd = true;
 	}
+
 	if (sockfd < 0)
 		goto fail_init;
 
 	/* Handshake, intializing "torrent" */
 	if (handshake(sockfd, parg, peer_id, info_hash, &torrent))
-	{
-		/*printf("error handshake with %s\n", ipstr);*/
 		goto fail_init;
-	}
 
 	log_printf(LOG_LEVEL_INFO, "Handshake with peer %s (ID: %.*s) successful\n", ipstr, 20, peer_id);
 
 	/* Init state */
 	state = conn_state_init(torrent);
 	if (!state)
-	{
-		printf("conn_state_init failed\n");
 		goto fail_init;
-	}
 
 	pthread_cleanup_push(conn_state_cleanup, state);
 
-	//unchoke(sockfd, state, torrent);
-	//show_interested(sockfd, state, torrent);
+	/*unchoke(sockfd, state, torrent);
+	show_interested(sockfd, state, torrent);*/
 
-	//send the initial bitfield:
+	// send the initial bitfield
 	peer_msg_t bitmsg;
 	bitmsg.type = MSG_BITFIELD;
 	bitmsg.payload.bitfield = byte_str_new(LBITFIELD_NUM_BYTES(state->bitlen), state->local_have);
@@ -845,7 +842,7 @@ static void *peer_connection(void *arg)
 		Sleep(1000);
 		pthread_setcancelstate(PTHREAD_CANCEL_DISABLE, NULL);
 
-		// service_have_events(sockfd, queue, torrent, state->local_have);
+		/*service_have_events(sockfd, queue, torrent, state->local_have);*/
 
 		/* Cancellation point in this func also, will update state based on message contents */
 		if (process_queued_msgs(sockfd, torrent, state))
@@ -865,9 +862,9 @@ static void *peer_connection(void *arg)
 			else
 			{
 				/* NO-OP for now... */
-				//peer_msg_t keepalive;
-				//keepalive.type = MSG_KEEPALIVE;
-				//peer_msg_send(sockfd, &keepalive, torrent);
+				/*peer_msg_t keepalive;
+				keepalive.type = MSG_KEEPALIVE;
+				peer_msg_send(sockfd, &keepalive, torrent);*/
 			}
 		}
 	}
