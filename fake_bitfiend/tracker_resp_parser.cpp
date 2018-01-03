@@ -1,7 +1,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <assert.h>
-#include <stdio.h> //temp
+#include <stdio.h> // temp
 #include <sys/types.h>
 #include <WinSock2.h>
 #include "tracker_resp_parser.h"
@@ -192,6 +192,13 @@ tracker_announce_resp_t *tracker_resp_parse(const byte_str_t *raw)
 			assert(0);
 		}
 	}
+
+	/* In case there was a failure and there was no "peers" key */
+	if (!ret->peers)
+		ret->peers = list_init();
+
+	if (!ret->peers)
+		goto fail_alloc;
 
 	bencode_free_obj_and_data_recursive(obj);
 	return ret;
