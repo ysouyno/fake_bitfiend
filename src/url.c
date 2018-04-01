@@ -3,7 +3,10 @@
 #include <stdio.h>
 #include "url.h"
 
+#if defined(_MSC_VER)
 #pragma warning(disable: 4996)
+#else
+#endif
 
 url_t *url_from_str(const char *str)
 {
@@ -25,8 +28,13 @@ url_t *url_from_str(const char *str)
 	else
 		ret->protocol = PROTOCOL_UNKNOWN;
 
+#if defined(_MSC_VER)
 	const char *hostname = strtok_s(buff, ":/", &saveptr);
 	hostname = strtok_s(NULL, ":/", &saveptr);
+#else
+  const char *hostname = strtok_r(buff, ":/", &saveptr);
+	hostname = strtok_r(NULL, ":/", &saveptr);
+#endif
 	ret->hostname = (char *)malloc(strlen(hostname) + 1);
 	if (!ret->hostname)
 		goto fail_alloc_hostname;
@@ -35,7 +43,11 @@ url_t *url_from_str(const char *str)
 
 	if (strstr(str, ":"))
 	{
+#if defined(_MSC_VER)
 		const char *port = strtok_s(NULL, ":/", &saveptr);
+#else
+    const char *port = strtok_r(NULL, ":/", &saveptr);
+#endif
 		ret->port = (uint16_t)strtoul(port, NULL, 0);
 	}
 	else if (ret->protocol == PROTOCOL_HTTP)
@@ -47,7 +59,11 @@ url_t *url_from_str(const char *str)
 		ret->port = 443;
 	}
 
+#if defined(_MSC_VER)
 	const char *path = strtok_s(NULL, ":/", &saveptr);
+#else
+  const char *path = strtok_r(NULL, ":/", &saveptr);
+#endif
 	ret->path = (char *)malloc(strlen(path) + 1);
 	if (!ret->path)
 		goto fail_alloc_path;

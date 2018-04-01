@@ -5,7 +5,10 @@
 #include <errno.h>
 #include <sys/stat.h>
 #include <sys/types.h>
+#if defined(_MSC_VER)
 #include <direct.h>
+#else
+#endif
 #include "torrent.h"
 #include "byte_str.h"
 #include "log.h"
@@ -68,7 +71,11 @@ static int populate_files_from_list(torrent_t *torrent, list_t *files,
 	strcat(path, "\\");
 	strcat(path, name);
 	log_printf(LOG_LEVEL_INFO, "Creating directory: %s\n", path);
+#if defined(_MSC_VER)
 	_mkdir(path);
+#else
+  mkdir(path, 0777);
+#endif
 
 	FOREACH_ENTRY(entry, files)
 	{
@@ -101,7 +108,11 @@ static int populate_files_from_list(torrent_t *torrent, list_t *files,
 
 					if (i < list_get_size(pathlist) - 1)
 					{
-						_mkdir(path);
+#if defined(_MSC_VER)
+            _mkdir(path);
+#else
+            mkdir(path, 0777);
+#endif
 						strcat(path, "\\");
 					}
 					i++;
@@ -180,8 +191,8 @@ static int populate_from_info_dic(torrent_t *torrent, dict_t *info, const char *
 
 	if (ret && errno)
 	{
-		strerror_s(errbuff, sizeof(errbuff), errno);
-		log_printf(LOG_LEVEL_ERROR, "%s\n", errbuff);
+		// strerror_s(errbuff, sizeof(errbuff), errno);
+		// log_printf(LOG_LEVEL_ERROR, "%s\n", errbuff);
 	}
 	return ret;
 }

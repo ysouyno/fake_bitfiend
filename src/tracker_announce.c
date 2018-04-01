@@ -6,6 +6,8 @@
 #include <string.h>
 #include <errno.h>
 #include <sys/types.h>
+#include <sys/socket.h>
+#include <netdb.h>
 #include "tracker_announce.h"
 #include "url.h"
 #include "bencode.h"
@@ -158,7 +160,11 @@ static int tracker_connect(url_t *url)
 
 		if (connect(sockfd, tracker->ai_addr, tracker->ai_addrlen) < 0)
 		{
+#if defined(_MSC_VER)
 			closesocket(sockfd);
+#else
+      close(sockfd);
+#endif
 			continue;
 		}
 
@@ -190,15 +196,27 @@ static byte_str_t *content_from_chunked(char *buff)
 	size_t chunk_sz;
 	size_t newsize = 0;
 
+#if defined(_MSC_VER)
 	line = strtok_s(buff, "\r\n", &saveptr);
+#else
+  line = strtok_r(buff, "\r\n", &saveptr);
+#endif
 	chunk_sz = strtoul(line, (char**)NULL, 16);
 	while (chunk_sz > 0)
 	{
-		line = strtok_s(NULL, "\r\n", &saveptr);
+#if defined(_MSC_VER)
+    line = strtok_s(NULL, "\r\n", &saveptr);
+#else
+    line = strtok_r(NULL, "\r\n", &saveptr);
+#endif
 		memcpy(newbuff + newsize, line, chunk_sz);
 		newsize += chunk_sz;
 
-		line = strtok_s(NULL, "\r\n", &saveptr);
+#if defined(_MSC_VER)
+    line = strtok_s(NULL, "\r\n", &saveptr);
+#else
+    line = strtok_r(NULL, "\r\n", &saveptr);
+#endif
 		chunk_sz = strtoul(line, (char**)NULL, 16);
 	}
 
@@ -213,14 +231,22 @@ static byte_str_t *content_from_tracker_resp(char *buff, size_t len)
 	unsigned cont_len = 0;
 	bool chunked = false;
 
+#if defined(_MSC_VER)
 	line = strtok_s(buff, "\n", &saveptr);
+#else
+  line = strtok_r(buff, "\n", &saveptr);
+#endif
 	if (strncmp(line, "HTTP/1.0 200 OK", strlen("HTTP/1.0 200 OK")) &&
 		strncmp(line, "HTTP/1.1 200 OK", strlen("HTTP/1.1 200 OK")))
 		goto fail_parse;
 
 	do
 	{
-		line = strtok_s(NULL, "\n", &saveptr);
+#if defined(_MSC_VER)
+    line = strtok_s(NULL, "\n", &saveptr);
+#else
+    line = strtok_r(NULL, "\n", &saveptr);
+#endif
 
 		if (!strncmp(line, "Transfer-Encoding: chunked", strlen("Transfer-Encoding: chunked")))
 		{
@@ -229,8 +255,13 @@ static byte_str_t *content_from_tracker_resp(char *buff, size_t len)
 
 		if (!strncmp(line, "Content-Length:", strlen("Content-Length:")))
 		{
+#if defined(_MSC_VER)
 			token = strtok_s(line, ":", &saveptrtok);
 			token = strtok_s(NULL, ":", &saveptrtok);
+#else
+      token = strtok_r(line, ":", &saveptrtok);
+			token = strtok_r(NULL, ":", &saveptrtok);
+#endif
 			cont_len = strtoul(token, NULL, 0);
 		}
 	} while (strlen(line) != 1);
@@ -324,7 +355,11 @@ tracker_announce_resp_t *tracker_announce(const char *urlstr, tracker_announce_r
 	if (!ret)
 		goto fail_parse;
 
+#if defined(_MSC_VER)
 	closesocket(sockfd);
+#else
+  close(sockfd);
+#endif
 	url_free(url);
 	free(request_str);
 	byte_str_free(raw);
@@ -335,7 +370,11 @@ fail_parse:
 	byte_str_free(raw);
 fail_recv:
 fail_send:
+#if defined(_MSC_VER)
 	closesocket(sockfd);
+#else
+  close(sockfd);
+#endif
 fail_connect:
 	free(request_str);
 fail_protocol:
@@ -343,7 +382,11 @@ fail_protocol:
 fail_parse_url:
 	if (errno)
 	{
+#if defined(_MSC_VER)
 		strerror_s(errbuff, sizeof(errbuff), errno);
+#else
+    strerror_r(errbuff, sizeof(errbuff), errno);
+#endif
 		log_printf(LOG_LEVEL_ERROR, "%s\n", errbuff);
 	}
 	return NULL;
