@@ -1,7 +1,12 @@
 #include <pthread.h>
 #include <stdarg.h>
 #include <time.h>
+#if defined(_MSC_VER)
 #include <Windows.h>
+#else
+#include <unistd.h>
+#include <sys/syscall.h>
+#endif
 #include "log.h"
 
 static pthread_mutex_t s_log_lock = PTHREAD_MUTEX_INITIALIZER;
@@ -25,7 +30,7 @@ void log_set_logfile(FILE *f)
 void log_printf(log_level_t lvl, const char *fmt, ...)
 {
 	va_list args;
-	long tid = /*(long)syscall(SYS_gettid)*/GetCurrentThreadId();
+	long tid = (long)syscall(SYS_gettid);
 	time_t now = time(0);
 	char timestr[9];
 

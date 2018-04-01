@@ -2,8 +2,13 @@
 #include <string.h>
 #include <assert.h>
 #include <stdio.h> // temp
-#include <sys/types.h>
+#if defined(_MSC_VER)
 #include <WinSock2.h>
+#else
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <netdb.h>
+#endif
 #include "tracker_resp_parser.h"
 #include "bencode.h"
 #include "log.h"

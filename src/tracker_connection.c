@@ -158,7 +158,11 @@ static void *periodic_announce(void *arg)
 
 		pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, NULL);
 		/* Cancellation point */
+#if defined(_MSC_VER)
 		Sleep(interval * 1000);
+#else
+    sleep(interval);
+#endif
 		pthread_setcancelstate(PTHREAD_CANCEL_DISABLE, NULL);
 	}
 

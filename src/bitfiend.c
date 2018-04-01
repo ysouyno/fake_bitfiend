@@ -6,6 +6,10 @@
 #include <assert.h>
 #include <signal.h>
 #include <errno.h>
+#if defined(_MSC_VER)
+#else
+#include <mqueue.h>
+#endif
 #include "bitfiend.h"
 #include "list.h"
 #include "peer_id.h"
@@ -260,6 +264,7 @@ void bitfiend_add_unassoc_peer(pthread_t thread)
 	pthread_mutex_unlock(&s_unassoc_peerthreads_lock);
 }
 
+#if defined(_MSC_VER)
 HANDLE mq_open(const char *name, DWORD flags)
 {
 	HANDLE hPipe = CreateFileA(
@@ -313,6 +318,7 @@ int mq_send(HANDLE queue, const char *pipe_name, const char *msg_ptr, size_t msg
 		return 0;
 	}
 }
+#endif
 
 int bitfiend_notify_peers_have(torrent_t *torrent, unsigned have_index)
 {
@@ -329,14 +335,25 @@ int bitfiend_notify_peers_have(torrent_t *torrent, unsigned have_index)
 
 		char queue_name[64];
 		peer_connection_queue_name(conn->thread, queue_name, sizeof(queue_name));
+#if defined(_MSC_VER)
 		HANDLE queue = mq_open(queue_name, 0);
+#else
+    mqd_t queue = mq_open(queue_name, O_WRONLY | O_NONBLOCK);
+#endif
 		if (queue != NULL)
 		{
 			// errno! = EAGAIN talk about later
+#if defined(_MSC_VER)
 			if (mq_send(queue, queue_name, (char*)&have_index, sizeof(unsigned), 0)/* && errno != EAGAIN*/)
+#else
+      if (mq_send(queue, (char*)&have_index, sizeof(unsigned), 0) && errno != EAGAIN)
+#endif
 				log_printf(LOG_LEVEL_ERROR, "Failed to send have event to peer threads\n");
-
+#if defined(_MSC_VER)
 			CloseHandle(queue);
+#else
+      mq_close(queue);
+#endif
 		}
 		else
 		{
