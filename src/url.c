@@ -68,9 +68,9 @@ url_t *url_from_str(const char *str)
 
   return ret;
 
-fail_alloc_path:
+ fail_alloc_path:
   free(ret->hostname);
-fail_alloc_hostname:
+ fail_alloc_hostname:
   free(ret);
   free(buff);
   return NULL;

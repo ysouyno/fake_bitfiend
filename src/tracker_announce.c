@@ -14,7 +14,10 @@
 #include "tracker_resp_parser.h"
 #include "log.h"
 
+#if defined(_MSC_VER)
 #pragma warning(disable: 4996)
+#else
+#endif
 
 static bool is_valid_url_char(const unsigned char c);
 static int print_url_encoded_char(char *out, size_t n, unsigned char c);
@@ -169,9 +172,9 @@ static int tracker_connect(url_t *url)
              sockfd, url->hostname);
   return sockfd;
 
-fail_connect:
+ fail_connect:
   freeaddrinfo(head);
-fail_getaddrinfo:
+ fail_getaddrinfo:
   return -1;
 }
 
@@ -256,7 +259,7 @@ static byte_str_t *content_from_tracker_resp(char *buff, size_t len)
     return byte_str_new(cont_len, (const unsigned char *)(line + strlen(line) + 1));
   }
 
-fail_parse:
+ fail_parse:
   log_printf(LOG_LEVEL_ERROR, "Tracker returned non-OK HTTP response\n");
   return NULL;
 }
@@ -345,20 +348,20 @@ tracker_announce_resp_t *tracker_announce(const char *urlstr, tracker_announce_r
 
   return ret;
 
-fail_parse:
+ fail_parse:
   byte_str_free(raw);
-fail_recv:
-fail_send:
+ fail_recv:
+ fail_send:
 #if defined(_MSC_VER)
   closesocket(sockfd);
 #else
   close(sockfd);
 #endif
-fail_connect:
+ fail_connect:
   free(request_str);
-fail_protocol:
+ fail_protocol:
   url_free(url);
-fail_parse_url:
+ fail_parse_url:
   if (errno) {
 #if defined(_MSC_VER)
     strerror_s(errbuff, sizeof(errbuff), errno);

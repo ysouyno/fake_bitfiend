@@ -80,7 +80,7 @@ int peer_recv_handshake(int sockfd, char outhash[20], char outpeerid[20], bool p
   const char reserved[8] = { 0 };
 
   size_t bufflen = 1 + pstrlen + sizeof(reserved) + 20
-                   + (peer_id ? sizeof(g_local_peer_id) : 0);
+    + (peer_id ? sizeof(g_local_peer_id) : 0);
 
   char *buff = (char *)malloc(bufflen);
   if (peer_recv_buff(sockfd, buff, bufflen)) {
@@ -179,7 +179,7 @@ static inline bool valid_len(msg_type_t type, const torrent_t *torrent, uint32_t
 {
   if (type == MSG_PIECE)
     return (len >= (1 + 2 * sizeof(uint32_t) + 1)) &&
-           (len <= (1 + 2 * sizeof(uint32_t) + PEER_REQUEST_SIZE));
+      (len <= (1 + 2 * sizeof(uint32_t) + PEER_REQUEST_SIZE));
 
   return (len == msgbuff_len(type, torrent));
 }
@@ -216,7 +216,7 @@ static int peer_msg_recv_piece(int sockfd, peer_msg_t *out, const torrent_t *tor
   piece_request_free(pr);
   return 0;
 
-fail_recv_piece:
+ fail_recv_piece:
   piece_request_free(pr);
   return -1;
 }
@@ -251,7 +251,7 @@ static int peer_msg_recv_pastlen(int sockfd, peer_msg_t *out, const torrent_t *t
     assert(left == 0);
     break;
   }
-  /* When we get a piece, write it to the mmap'd file directly */
+    /* When we get a piece, write it to the mmap'd file directly */
   case MSG_PIECE: {
     assert(left > 0);
     if (peer_msg_recv_piece(sockfd, out, torrent, left))
@@ -376,11 +376,11 @@ static int peer_msg_send_piece(int sockfd, piece_msg_t *pmsg, const torrent_t *t
     }
   }
 
-done:
+ done:
   piece_request_free(pr);
   return 0;
 
-fail_send_piece:
+ fail_send_piece:
   piece_request_free(pr);
   return -1;
 }

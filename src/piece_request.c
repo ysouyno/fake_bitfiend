@@ -13,7 +13,7 @@ static void skip_until_index(const list_iter_t **iter, off_t *offset, unsigned i
     filemem_t mem;
     dl_file_getfilemem(file, &mem);
 
-    /* This is the last file to skip*/
+    /* This is the last file to skip */
     if (mem.size > skip) {
       *offset = skip;
       return;
@@ -90,7 +90,7 @@ piece_request_t *piece_request_create(const torrent_t *torrent, unsigned index)
   block_request_t *block;
   size_t left = torrent->piece_len;
   off_t offset = 0; /* How many bytes at the start of the file
-					  * at the iterator have already been 'consumed' */
+                     * at the iterator have already been 'consumed' */
   skip_until_index(&iter, &offset, index, torrent);
 
   while (block = next_block_request(&iter, &offset, &left, torrent->piece_len)) {
@@ -101,14 +101,14 @@ piece_request_t *piece_request_create(const torrent_t *torrent, unsigned index)
 
   return ret;
 
-fail_alloc_entry:
+ fail_alloc_entry:
   ;
   const unsigned char *entry;
   FOREACH_ENTRY(entry, ret->block_requests) {
     free(*(filemem_t**)entry);
   }
 
-fail_alloc_list:
+ fail_alloc_list:
   free(ret);
 
   return NULL;
@@ -120,7 +120,7 @@ void piece_request_free(piece_request_t *request)
   FOREACH_ENTRY(entry, request->block_requests) {
     block_request_t *br = *(block_request_t**)entry;
     list_free(br->filemems); /* The filemems are copied into the list,
-								 * no additional heap freeing necessary */
+                              * no additional heap freeing necessary */
     free(br);
   }
 

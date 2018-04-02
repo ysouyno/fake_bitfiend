@@ -25,8 +25,8 @@ static const uint16_t s_port = 6889;
 static pthread_mutex_t s_torrents_lock = PTHREAD_MUTEX_INITIALIZER;
 static list_t *s_torrents;
 /* Threads for incoming peer connections which have been created but not yet associated
-* with a particular torrent, which can't be done until after handshaking. Store their handles
-* here for now, until a torrent_t associates with it and removes the handle from this list */
+ * with a particular torrent, which can't be done until after handshaking. Store their handles
+ * here for now, until a torrent_t associates with it and removes the handle from this list */
 static pthread_mutex_t s_unassoc_peerthreads_lock = PTHREAD_MUTEX_INITIALIZER;
 static list_t *s_unassoc_peerthreads;
 static bool s_shutdown = false;
@@ -47,7 +47,7 @@ int bitfiend_init(void)
   log_printf(LOG_LEVEL_INFO, "BitFiend init successful\n");
   return BITFIEND_SUCCESS;
 
-fail_start_listener:
+ fail_start_listener:
   log_printf(LOG_LEVEL_ERROR, "BitFiend init error\n");
   return BITFIEND_FAILURE;
 }
@@ -87,8 +87,8 @@ static int shutdown_torrent(torrent_t *torrent)
   torrent_free(torrent);
   return BITFIEND_SUCCESS;
 
-fail_stop_peer:
-fail_stop_tracker:
+ fail_stop_peer:
+ fail_stop_tracker:
   return BITFIEND_FAILURE;
 }
 
@@ -99,12 +99,12 @@ int bitfiend_shutdown(void)
   void *tret;
 
   /* Thread join order matters here.
-  * First, join the peer_listener so no new unassociated peers can be added.
-  * Next, join unassociated peers, after which a torrent's peer_connections
-  * list can only grow if its' tracker_thread gives it peers.
-  * Now, iterate over all torrents. Join the tracker thread first. Now no new peer
-  * threads can be spawned which can touch the torrent. Join the torrent's peers last.
-  */
+   * First, join the peer_listener so no new unassociated peers can be added.
+   * Next, join unassociated peers, after which a torrent's peer_connections
+   * list can only grow if its' tracker_thread gives it peers.
+   * Now, iterate over all torrents. Join the tracker thread first. Now no new peer
+   * threads can be spawned which can touch the torrent. Join the torrent's peers last.
+   */
 
   if (pthread_cancel(s_peer_listener))
     ret = BITFIEND_FAILURE;
@@ -124,8 +124,8 @@ int bitfiend_shutdown(void)
   pthread_t curr;
   do {
     /* Remove one entry at a time from the list head. This is so we are not holding the
-    * list lock while we are joining the thread in the list, since the thread being
-    * joined can also hold the lock and remove an entry from the list */
+     * list lock while we are joining the thread in the list, since the thread being
+     * joined can also hold the lock and remove an entry from the list */
     pthread_mutex_lock(&s_unassoc_peerthreads_lock);
     iter = list_iter_first(s_unassoc_peerthreads);
     if (iter) {
@@ -191,8 +191,8 @@ torrent_t *bitfiend_add_torrent(const char *metafile, const char *destdir)
   log_printf(LOG_LEVEL_INFO, "Torrent added successfully: %s\n", metafile);
   return torrent;
 
-fail_create:
-fail_parse:
+ fail_create:
+ fail_parse:
   log_printf(LOG_LEVEL_ERROR, "Error adding torrent: %s\n", metafile);
   return NULL;
 }
@@ -261,14 +261,14 @@ void bitfiend_add_unassoc_peer(pthread_t thread)
 HANDLE mq_open(const char *name, DWORD flags)
 {
   HANDLE hPipe = CreateFileA(
-                   name,          // pipe name
-                   GENERIC_READ | // read and write access
-                   GENERIC_WRITE,
-                   0,             // no sharing
-                   NULL,          // default security attributes
-                   OPEN_EXISTING, // opens existing pipe
-                   0,             // default attributes
-                   NULL);         // no template file
+                             name,          // pipe name
+                             GENERIC_READ | // read and write access
+                             GENERIC_WRITE,
+                             0,             // no sharing
+                             NULL,          // default security attributes
+                             OPEN_EXISTING, // opens existing pipe
+                             0,             // default attributes
+                             NULL);         // no template file
 
   if (hPipe == INVALID_HANDLE_VALUE) {
     printf("CreateFileA named pipe %s failed: %d\n", name, GetLastError());
@@ -290,11 +290,11 @@ int mq_send(HANDLE queue, const char *pipe_name, const char *msg_ptr, size_t msg
 
   DWORD cbWritten = 0;
   BOOL bRet = WriteFile(
-                queue,      // pipe handle
-                msg_ptr,    // message
-                msg_len,    // message length
-                &cbWritten, // bytes written
-                NULL);      // not overlapped
+                        queue,      // pipe handle
+                        msg_ptr,    // message
+                        msg_len,    // message length
+                        &cbWritten, // bytes written
+                        NULL);      // not overlapped
 
   if (!bRet) {
     printf("WriteFile to pipe %s failed: %d\n", pipe_name, GetLastError());
@@ -332,9 +332,9 @@ int bitfiend_notify_peers_have(torrent_t *torrent, unsigned have_index)
 #if defined(_MSC_VER)
       if (mq_send(queue, queue_name, (char*)&have_index, sizeof(unsigned), 0)/* && errno != EAGAIN*/)
 #else
-      if (mq_send(queue, (char*)&have_index, sizeof(unsigned), 0) && errno != EAGAIN)
+        if (mq_send(queue, (char*)&have_index, sizeof(unsigned), 0) && errno != EAGAIN)
 #endif
-        log_printf(LOG_LEVEL_ERROR, "Failed to send have event to peer threads\n");
+          log_printf(LOG_LEVEL_ERROR, "Failed to send have event to peer threads\n");
 #if defined(_MSC_VER)
       CloseHandle(queue);
 #else

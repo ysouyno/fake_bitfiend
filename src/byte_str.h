@@ -3,7 +3,10 @@
 
 #include <stddef.h>
 
+#if defined(_MSC_VER)
 #pragma warning(disable: 4200)
+#else
+#endif
 
 typedef struct byte_str {
   size_t size;

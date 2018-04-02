@@ -43,7 +43,7 @@ static dict_t *create_piece_dict(byte_str_t *raw)
 
   return ret;
 
-fail_alloc_str:
+ fail_alloc_str:
   ;
   const char *key;
   const unsigned char *val;
@@ -52,7 +52,7 @@ fail_alloc_str:
   }
   dict_free(ret);
 
-fail_alloc_dict:
+ fail_alloc_dict:
   return NULL;
 }
 
@@ -253,7 +253,7 @@ torrent_t *torrent_init(bencode_obj_t *meta, const char *destdir)
 
   return ret;
 
-fail_alloc:
+ fail_alloc:
   return NULL;
 }
 
@@ -346,7 +346,7 @@ bool torrent_sha1_verify(const torrent_t *torrent, unsigned index)
 }
 
 /* TODO: Eventually add keeping of piece frequency in the torrent and change piece selection to
-* use rarest first algorithm. Also add more fine-grained locking for piece states */
+ * use rarest first algorithm. Also add more fine-grained locking for piece states */
 int torrent_next_request(torrent_t *torrent, unsigned char *peer_have_bf, unsigned *out)
 {
   unsigned nr, r;

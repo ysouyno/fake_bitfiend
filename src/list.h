@@ -19,8 +19,8 @@ const list_iter_t *list_iter_first(const list_t *list);
 const list_iter_t *list_iter_next(const list_iter_t *iter);
 const unsigned char *list_iter_get_value(const list_iter_t *iter);
 
-#define FOREACH_ENTRY(_entry, _list_ptr) \
-    for(const list_iter_t *_iter = list_iter_first(_list_ptr); \
-        _iter && (_entry = list_iter_get_value(_iter)); _iter = list_iter_next(_iter))
+#define FOREACH_ENTRY(_entry, _list_ptr)                                \
+  for(const list_iter_t *_iter = list_iter_first(_list_ptr);            \
+      _iter && (_entry = list_iter_get_value(_iter)); _iter = list_iter_next(_iter))
 
 #endif

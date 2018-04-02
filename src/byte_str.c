@@ -9,8 +9,8 @@ byte_str_t *byte_str_new(size_t size, const unsigned char *str)
   if (ret) {
     memcpy(ret->str, str, size);
     /* NULL-terminate all data so this type is suitable for
-    * storing ASCII data also
-    */
+     * storing ASCII data also
+     */
     ret->str[size] = '\0';
     ret->size = size;
   }

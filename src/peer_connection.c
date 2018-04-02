@@ -102,15 +102,15 @@ static conn_state_t *conn_state_init(torrent_t *torrent)
 
   return ret;
 
-fail_local_have:
+ fail_local_have:
   free(ret->local_requests);
-fail_local_reqs:
+ fail_local_reqs:
   free(ret->peer_requests);
-fail_peer_reqs:
+ fail_peer_reqs:
   free(ret->peer_wants);
-fail_peer_wants:
+ fail_peer_wants:
   free(ret->peer_have);
-fail_peer_have:
+ fail_peer_have:
   free(ret);
 
   return NULL;
@@ -238,7 +238,7 @@ static int peer_connect(peer_arg_t *arg)
              ipstr, sockfd);
   return sockfd;
 
-fail:
+ fail:
   closesocket(sockfd);
   return -1;
 }
@@ -302,7 +302,7 @@ static int peer_connect(peer_arg_t *arg)
              ipstr, sockfd);
   return sockfd;
 
-fail:
+ fail:
   close(sockfd);
   return -1;
 }
@@ -412,17 +412,17 @@ static HANDLE peer_queue_open(DWORD flags)
   peer_connection_queue_name(pthread_self(), queue_name, sizeof(queue_name));
 
   ret = CreateNamedPipeA(
-          queue_name,               // pipe name
-          /*FILE_FLAG_OVERLAPPED |*/
-          PIPE_ACCESS_DUPLEX,       // read/write access
-          PIPE_TYPE_BYTE |          // message type pipe
-          PIPE_READMODE_BYTE |      // message-read mode
-          flags,                    // blocking mode
-          PIPE_UNLIMITED_INSTANCES, // max. instances
-          1024,                     // output buffer size
-          1024,                     // input buffer size
-          0,                        // client time-out
-          NULL);                    // default security attribute
+                         queue_name,               // pipe name
+                         /*FILE_FLAG_OVERLAPPED |*/
+                         PIPE_ACCESS_DUPLEX,       // read/write access
+                         PIPE_TYPE_BYTE |          // message type pipe
+                         PIPE_READMODE_BYTE |      // message-read mode
+                         flags,                    // blocking mode
+                         PIPE_UNLIMITED_INSTANCES, // max. instances
+                         1024,                     // output buffer size
+                         1024,                     // input buffer size
+                         0,                        // client time-out
+                         NULL);                    // default security attribute
 
   if (ret == INVALID_HANDLE_VALUE) {
     printf("Failed to open queue in receiver thread %s failed: %d\n", queue_name, GetLastError());
@@ -551,17 +551,17 @@ static void service_have_events(int sockfd, HANDLE queue, const torrent_t *torre
   */
 
   BOOL fConnected = ConnectNamedPipe(queue, NULL) ?
-                    TRUE : (GetLastError() == ERROR_PIPE_CONNECTED);
+    TRUE : (GetLastError() == ERROR_PIPE_CONNECTED);
 
   if (fConnected) {
     printf("ConnectNamedPipe got signal\n");
 
     bRet = ReadFile(
-             queue,        // file to read from
-             szIn,         // address of input buffer
-             sizeof(szIn), // number of bytes to read
-             &cbRead,      // number of bytes read
-             &os);         // overlapped stuff, not needed
+                    queue,        // file to read from
+                    szIn,         // address of input buffer
+                    sizeof(szIn), // number of bytes to read
+                    &cbRead,      // number of bytes read
+                    &os);         // overlapped stuff, not needed
     if (bRet) {
       msg.payload.have = have;
       LBITFIELD_SET(have, havebf);
@@ -995,10 +995,10 @@ static void *peer_connection(void *arg)
     }
   }
 
-abort_conn:
+ abort_conn:
   pthread_cleanup_pop(1);
 
-fail_init:
+ fail_init:
   pthread_cleanup_pop(1);
 
   pthread_exit(NULL);
@@ -1101,11 +1101,11 @@ static void *peer_connection(void *arg)
         }
       }
 
-abort_conn:
+    abort_conn:
       ;
     }
     pthread_cleanup_pop(1);
-fail_init:
+  fail_init:
     ;
   }
   pthread_cleanup_pop(1);
@@ -1121,7 +1121,7 @@ int peer_connection_create(pthread_t *thread, peer_arg_t *arg)
 
   return 0;
 
-fail_create_thread:
+ fail_create_thread:
   log_printf(LOG_LEVEL_ERROR, "Failed to create peer connection thread\n");
   return -1;
 }

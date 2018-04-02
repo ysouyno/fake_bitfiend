@@ -3,11 +3,11 @@
 #include <string.h>
 #include "list.h"
 
-#define FOREACH_NODE(_node, _list) \
-    for(node_t *_node = _list->head; _node; _node = _node->next)
+#define FOREACH_NODE(_node, _list)                              \
+  for(node_t *_node = _list->head; _node; _node = _node->next)
 
-#define FOREACH_NODE_AND_PREV(_node, _prev, _list) \
-    for(node_t *_node = _list->head, *_prev = NULL; _node; _prev = _node, _node = _node->next)
+#define FOREACH_NODE_AND_PREV(_node, _prev, _list)                      \
+  for(node_t *_node = _list->head, *_prev = NULL; _node; _prev = _node, _node = _node->next)
 
 typedef struct list_iter {
   struct list_iter *next;

@@ -74,9 +74,9 @@ static int bind_listener(const uint16_t port)
              sockfd, port);
   return sockfd;
 
-fail_bind:
+ fail_bind:
   freeaddrinfo(head);
-fail_getaddrinfo:
+ fail_getaddrinfo:
   return -1;
 }
 
@@ -127,9 +127,9 @@ static int bind_listener(const uint16_t port)
              sockfd, port);
   return sockfd;
 
-fail_bind:
+ fail_bind:
   freeaddrinfo(head);
-fail_getaddrinfo:
+ fail_getaddrinfo:
   return -1;
 }
 
@@ -166,9 +166,9 @@ static int create_peer_connection(peer_t *peer, int sockfd)
   free(peer);
   return 0;
 
-fail_create:
+ fail_create:
   free(arg);
-fail_alloc:
+ fail_alloc:
   free(peer);
   log_printf(LOG_LEVEL_ERROR, "Failed to create peer thread\n");
   return -1;
@@ -216,8 +216,8 @@ static void *peer_listen(void *arg)
 
   pthread_cleanup_pop(0);
 
-fail_listen:
-fail_bind:
+ fail_listen:
+ fail_bind:
   if (errno) {
     // strerror_s(errbuff, sizeof(errbuff), errno);
     // log_printf(LOG_LEVEL_ERROR, "%s\n", errbuff);
@@ -234,7 +234,7 @@ int peer_listener_create(pthread_t *thread, const uint16_t *port)
 
   return 0;
 
-fail_create_thread:
+ fail_create_thread:
   log_printf(LOG_LEVEL_ERROR, "Failed to create peer listener thread\n");
   return -1;
 }

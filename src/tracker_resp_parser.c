@@ -40,7 +40,7 @@ static list_t *parse_peerlist_str(byte_str_t *raw)
 
   return peers;
 
-fail_alloc:
+ fail_alloc:
   return NULL;
 }
 
@@ -103,7 +103,7 @@ static list_t *parse_peerlist_list(list_t *list)
   }
   return peers;
 
-fail_alloc:
+ fail_alloc:
   return NULL;
 }
 
@@ -187,8 +187,8 @@ tracker_announce_resp_t *tracker_resp_parse(const byte_str_t *raw)
   bencode_free_obj_and_data_recursive(obj);
   return ret;
 
-fail_alloc:
+ fail_alloc:
   bencode_free_obj_and_data_recursive(obj);
-fail_parse:
+ fail_parse:
   return NULL;
 }

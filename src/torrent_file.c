@@ -74,14 +74,14 @@ static torrent_file_t *torrent_file_open(const char *path)
 
   return file;
 
-fail_alloc:
+ fail_alloc:
   // munmap(file->data, file->size);
   UnmapViewOfFile(mem);
   CloseHandle(file_handle);
   CloseHandle(h);
-fail_map:
+ fail_map:
   close(fd);
-fail_open:
+ fail_open:
   return NULL;
 }
 
@@ -101,7 +101,7 @@ static int torrent_file_close_and_free(torrent_file_t *file)
   free(file);
   return 0;
 
-fail:
+ fail:
   free(file);
   return -1;
 }
@@ -133,11 +133,11 @@ static torrent_file_t *torrent_file_open(const char *path)
 
   return file;
 
-fail_alloc:
+ fail_alloc:
   munmap(file->data, file->size);
-fail_map:
+ fail_map:
   close(fd);
-fail_open:
+ fail_open:
   return NULL;
 }
 
@@ -152,7 +152,7 @@ static int torrent_file_close_and_free(torrent_file_t *file)
   free(file);
   return 0;
 
-fail:
+ fail:
   free(file);
   return -1;
 }
@@ -176,6 +176,6 @@ bencode_obj_t *torrent_file_parse(const char *path)
   torrent_file_close_and_free(file);
   return ret;
 
-fail_open:
+ fail_open:
   return NULL;
 }

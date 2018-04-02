@@ -15,7 +15,10 @@
 #include "dl_file.h"
 #include "log.h"
 
+#if defined(_MSC_VER)
 #pragma warning(disable: 4996)
+#else
+#endif
 
 struct dl_file {
   pthread_mutex_t file_lock;
@@ -23,7 +26,9 @@ struct dl_file {
   unsigned char *data;
   char path[];
 };
+
 #if defined(_MSC_VER)
+
 dl_file_t *dl_file_create_and_open(size_t size, const char *path)
 {
   unsigned char *mem;
@@ -38,8 +43,9 @@ dl_file_t *dl_file_create_and_open(size_t size, const char *path)
   if (fd < 0)
     goto fail_open;
 
-  /*if(ftruncate(fd, size))
-  goto fail_truncate;*/
+  /*
+    if(ftruncate(fd, size))
+    goto fail_truncate;*/
 
   if (_chsize(fd, size)) {
     goto fail_truncate;
@@ -82,15 +88,15 @@ dl_file_t *dl_file_create_and_open(size_t size, const char *path)
   log_printf(LOG_LEVEL_INFO, "Successfully (created and) opened file at: %s\n", path);
   return file;
 
-fail_alloc:
+ fail_alloc:
   // munmap(mem, stats.st_size);
   UnmapViewOfFile(mem);
   CloseHandle(file_handle);
   CloseHandle(h);
-fail_map:
-fail_truncate:
+ fail_map:
+ fail_truncate:
   close(fd);
-fail_open:
+ fail_open:
   log_printf(LOG_LEVEL_ERROR, "Unable to (create and) open file at:%s\n", path);
   return NULL;
 }
@@ -99,7 +105,7 @@ int dl_file_close_and_free(dl_file_t *file)
 {
   int ret = 0;
   /*if(munmap(file->data, file->size))
-  ret = -1;*/
+    ret = -1;*/
 
   if (UnmapViewOfFile(file->data)) {
     return -1;
@@ -154,12 +160,12 @@ dl_file_t  *dl_file_create_and_open(size_t size, const char *path)
   log_printf(LOG_LEVEL_INFO, "Successfully (created and) opened file at: %s\n", path);
   return file;
 
-fail_alloc:
+ fail_alloc:
   munmap(mem, stats.st_size);
-fail_map:
-fail_truncate:
+ fail_map:
+ fail_truncate:
   close(fd);
-fail_open:
+ fail_open:
   log_printf(LOG_LEVEL_ERROR, "Unable to (create and) open file at:%s\n", path);
   return NULL;
 }

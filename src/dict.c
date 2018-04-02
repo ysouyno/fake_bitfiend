@@ -6,21 +6,21 @@
 #include <assert.h>
 #include "dict.h"
 
-#define FOREACH_ENTRY_IN_BIN(_entry, _dict_ptr, _bin) \
-    for(dict_entry_t *_entry = _dict_ptr->bins[_bin]; _entry; _entry = _entry->next)
+#define FOREACH_ENTRY_IN_BIN(_entry, _dict_ptr, _bin)                   \
+  for(dict_entry_t *_entry = _dict_ptr->bins[_bin]; _entry; _entry = _entry->next)
 
-#define FOREACH_ENTRY_AND_PREV_IN_BIN(_entry, _prev, _dict_ptr, _bin) \
-    for(dict_entry_t *_entry = _dict_ptr->bins[_bin], *_prev = NULL; _entry; \
-    _prev = _entry, _entry = _entry->next)
+#define FOREACH_ENTRY_AND_PREV_IN_BIN(_entry, _prev, _dict_ptr, _bin)   \
+  for(dict_entry_t *_entry = _dict_ptr->bins[_bin], *_prev = NULL; _entry; \
+      _prev = _entry, _entry = _entry->next)
 
 #define SET_TO_LAST_ENTRY(entry_ptr, dict_ptr, bin) \
-    do { \
-        entry_ptr = dict_ptr->bins[bin]; \
-        if(!entry_ptr) \
-            break; \
-        while(entry_ptr->next) \
-            entry_ptr = entry_ptr->next; \
-    }while(0)
+  do {                                              \
+    entry_ptr = dict_ptr->bins[bin];                \
+    if(!entry_ptr)                                  \
+      break;                                        \
+    while(entry_ptr->next)                          \
+      entry_ptr = entry_ptr->next;                  \
+  }while(0)
 
 
 struct dict_iter {

@@ -66,7 +66,7 @@ static int create_peer_connection(peer_t *peer, torrent_t *torrent)
 
   return 0;
 
-fail_create:
+ fail_create:
   log_printf(LOG_LEVEL_ERROR, "Failed to create peer thread\n");
   free(arg);
   free(conn);
@@ -168,6 +168,6 @@ int tracker_connection_create(pthread_t *thread, tracker_arg_t *arg)
 
   return 0;
 
-fail_create_thread:
+ fail_create_thread:
   return -1;
 }
