@@ -11,7 +11,4 @@ find . -name ".cproject" | xargs rm -rf
 find . -name ".project" | xargs rm -rf
 
 # clean executable file
-find . -name "daobell_main" | xargs rm -rf
-find . -name "daobell_test" | xargs rm -rf
-find . -name "libdaobell_lib.a" | xargs rm -rf
-find . -name "libdaobell_lib.so" | xargs rm -rf
+find . -name "fake_bitfiend" | xargs rm -rf
