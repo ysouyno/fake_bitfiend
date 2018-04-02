@@ -12,11 +12,10 @@ By Steve Reid <steve@edmweb.com>
 
 #define DIGEST_LEN 20
 
-typedef struct
-{
-	uint32_t state[5];
-	uint32_t count[2];
-	unsigned char buffer[64];
+typedef struct {
+  uint32_t state[5];
+  uint32_t count[2];
+  unsigned char buffer[64];
 } sha1_context;
 
 typedef sha1_context sha1_context_t;

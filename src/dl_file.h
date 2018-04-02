@@ -3,11 +3,10 @@
 
 #include <stddef.h>
 
-typedef struct filemem
-{
-	void *mem;
-	size_t size;
-}filemem_t;
+typedef struct filemem {
+  void *mem;
+  size_t size;
+} filemem_t;
 
 typedef struct dl_file dl_file_t;
 

@@ -6,11 +6,10 @@
 
 struct torrent;
 
-typedef struct tracker_arg
-{
-	struct torrent *torrent;
-	uint16_t port;
-}tracker_arg_t;
+typedef struct tracker_arg {
+  struct torrent *torrent;
+  uint16_t port;
+} tracker_arg_t;
 
 int tracker_connection_create(pthread_t *thread, tracker_arg_t *arg);
 

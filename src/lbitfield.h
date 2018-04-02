@@ -1,4 +1,4 @@
-#ifndef LBITFIELD_H 
+#ifndef LBITFIELD_H
 #define LBITFIELD_H
 
 #include <limits.h>

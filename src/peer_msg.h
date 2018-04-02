@@ -7,48 +7,43 @@
 
 #define HANDSHAKE_LEN 128
 
-typedef enum
-{
-	MSG_KEEPALIVE = -1,
-	MSG_CHOKE = 0,
-	MSG_UNCHOKE = 1,
-	MSG_INTERESTED = 2,
-	MSG_NOT_INTERESTED = 3,
-	MSG_HAVE = 4,
-	MSG_BITFIELD = 5,
-	MSG_REQUEST = 6,
-	MSG_PIECE = 7,
-	MSG_CANCEL = 8,
-	MSG_PORT = 9,
-	MSG_MAX
-}msg_type_t;
+typedef enum {
+  MSG_KEEPALIVE = -1,
+  MSG_CHOKE = 0,
+  MSG_UNCHOKE = 1,
+  MSG_INTERESTED = 2,
+  MSG_NOT_INTERESTED = 3,
+  MSG_HAVE = 4,
+  MSG_BITFIELD = 5,
+  MSG_REQUEST = 6,
+  MSG_PIECE = 7,
+  MSG_CANCEL = 8,
+  MSG_PORT = 9,
+  MSG_MAX
+} msg_type_t;
 
-typedef struct request_msg
-{
-	uint32_t index;
-	uint32_t begin;
-	uint32_t length;
-}request_msg_t;
+typedef struct request_msg {
+  uint32_t index;
+  uint32_t begin;
+  uint32_t length;
+} request_msg_t;
 
-typedef struct piece_msg
-{
-	uint32_t index;
-	uint32_t begin;
-	size_t blocklen;
-}piece_msg_t;
+typedef struct piece_msg {
+  uint32_t index;
+  uint32_t begin;
+  size_t blocklen;
+} piece_msg_t;
 
-typedef struct peer_msg
-{
-	msg_type_t type;
-	union
-	{
-		uint32_t have;
-		byte_str_t *bitfield;
-		request_msg_t request;
-		piece_msg_t piece;
-		unsigned listen_port;
-	}payload;
-}peer_msg_t;
+typedef struct peer_msg {
+  msg_type_t type;
+  union {
+    uint32_t have;
+    byte_str_t *bitfield;
+    request_msg_t request;
+    piece_msg_t piece;
+    unsigned listen_port;
+  } payload;
+} peer_msg_t;
 
 int peer_send_buff(int sockfd, const char *buff, size_t len);
 int peer_recv_buff(int sockfd, char *buff, size_t len);

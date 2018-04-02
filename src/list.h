@@ -23,4 +23,4 @@ const unsigned char *list_iter_get_value(const list_iter_t *iter);
     for(const list_iter_t *_iter = list_iter_first(_list_ptr); \
         _iter && (_entry = list_iter_get_value(_iter)); _iter = list_iter_next(_iter))
 
-#endif 
+#endif

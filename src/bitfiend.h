@@ -1,13 +1,12 @@
-#ifndef BITFIEND_H 
+#ifndef BITFIEND_H
 #define BITFIEND_H
 
 #include "torrent.h"
 //TODO change api to return void pointer
 
-enum
-{
-	BITFIEND_FAILURE = -1,
-	BITFIEND_SUCCESS
+enum {
+  BITFIEND_FAILURE = -1,
+  BITFIEND_SUCCESS
 };
 
 int bitfiend_init(void);
