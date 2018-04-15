@@ -318,7 +318,7 @@ static int peer_msg_recv_pastlen(int sockfd, peer_msg_t *out, const torrent_t *t
     break;
   }
   case MSG_CANCEL: {
-    //TODO:
+    // TODO:
     assert(0);
     break;
   }
@@ -387,16 +387,24 @@ static int peer_msg_send_piece(int sockfd, piece_msg_t *pmsg, const torrent_t *t
 
 int peer_msg_send(int sockfd, peer_msg_t *msg, const torrent_t *torrent)
 {
+  /* https://wiki.theory.org/index.php/BitTorrentSpecification#Messages
+   * All of the remaining messages in the protocol take the form of
+   * <length prefix><message ID><payload>. The length prefix is a
+   * four byte big-endian value. The message ID is a single decimal
+   * byte. The payload is message dependent.
+   */
   uint32_t len = msgbuff_len(msg->type, torrent);
   log_printf(LOG_LEVEL_INFO, "Sending message of type: %d, len: %u\n", msg->type, len);
   len = htonl(len);
 
-  if (peer_send_buff(sockfd, (char*)&len, sizeof(uint32_t)))
+  // send <length prefix>
+  if (peer_send_buff(sockfd, (char *)&len, sizeof(uint32_t)))
     return -1;
 
   if (msg->type == MSG_KEEPALIVE)
     return 0;
 
+  // send <message ID>
   char out = msg->type;
   if (peer_send_buff(sockfd, &out, 1))
     return -1;
@@ -451,7 +459,7 @@ int peer_msg_send(int sockfd, peer_msg_t *msg, const torrent_t *torrent)
     return 0;
   }
   case MSG_CANCEL: {
-    //TODO:
+    // TODO:
     assert(0);
     break;
   }
@@ -465,7 +473,7 @@ int peer_msg_recv(int sockfd, peer_msg_t *out, const torrent_t *torrent)
   uint32_t len;
   log_printf(LOG_LEVEL_DEBUG, "Receiving len of message\n");
 
-  if (peer_recv_buff(sockfd, (char*)&len, sizeof(uint32_t)))
+  if (peer_recv_buff(sockfd, (char *)&len, sizeof(uint32_t)))
     return -1;
   len = ntohl(len);
 

@@ -105,7 +105,7 @@ static void *periodic_announce(void *arg)
 
   bool started = false;
   while (true) {
-    tracker_announce_request_t *req = create_tracker_request(arg);
+    tracker_announce_request_t *req = create_tracker_request(targ);
     tracker_announce_resp_t *resp;
 
     if (!started) {

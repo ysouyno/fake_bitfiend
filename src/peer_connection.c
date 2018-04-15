@@ -588,10 +588,10 @@ static void service_have_events(int sockfd, mqd_t queue, const torrent_t *torren
   msg.type = MSG_HAVE;
   int ret;
 
-  while((ret = mq_receive(queue, (char*)&have, sizeof(uint32_t), 0)) == sizeof(uint32_t)) {
+  while ((ret = mq_receive(queue, (char *)&have, sizeof(uint32_t), 0)) == sizeof(uint32_t)) {
     msg.payload.have = have;
     LBITFIELD_SET(have, havebf);
-    if(peer_msg_send(sockfd, &msg, torrent))
+    if (peer_msg_send(sockfd, &msg, torrent))
       break;
     log_printf(LOG_LEVEL_INFO, "Event serviced!: have (%u) sent to peer\n", have);
   }
@@ -721,6 +721,7 @@ static void process_msg(int sockfd, peer_msg_t *msg, conn_state_t *state, torren
     /*assert(state->local.interested == false);*/
 
     pthread_mutex_lock(&torrent->sh_lock);
+
     for (int i = 0; i < dict_get_size(torrent->pieces); i++) {
       if (torrent->sh.piece_states[i] != PIECE_STATE_HAVE && LBITFIELD_ISSET(i, state->peer_have)) {
         interested = true;
@@ -748,10 +749,10 @@ static void process_msg(int sockfd, peer_msg_t *msg, conn_state_t *state, torren
     state->blocks_recvd++;
     break;
   case MSG_CANCEL:
-    /*Remove the request from the request queue */
+    /* Remove the request from the request queue */
     break;
   case MSG_PORT:
-    //TODO
+    // TODO
     break;
   default:
     break;
@@ -1053,12 +1054,13 @@ static void *peer_connection(void *arg)
       goto fail_init;
     pthread_cleanup_push(conn_state_cleanup, state);
     {
+      printf("local bitfield: ");
       for (int i = 0; i < LBITFIELD_NUM_BYTES(dict_get_size(torrent->pieces)); i++) {
         printf("%02X", (unsigned char) state->local_have[i]);
       }
       printf("\n");
 
-      //send the initial bitfield:
+      // send the initial bitfield:
       peer_msg_t bitmsg;
       bitmsg.type = MSG_BITFIELD;
       bitmsg.payload.bitfield = byte_str_new(LBITFIELD_NUM_BYTES(state->bitlen), state->local_have);
@@ -1070,7 +1072,7 @@ static void *peer_connection(void *arg)
 
       unchoke(sockfd, state, torrent);
 
-      while(true) {
+      while (true) {
         pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, NULL);
         usleep(250 * 1000);
         pthread_setcancelstate(PTHREAD_CANCEL_DISABLE, NULL);
@@ -1144,11 +1146,11 @@ void peer_connection_queue_name(pthread_t thread, char *out, size_t len)
 
 void peer_connection_queue_name(pthread_t thread, char *out, size_t len)
 {
-  assert(len >= strlen("/") + 2*sizeof(pthread_t) + strlen("_queue") + 1);
+  assert(len >= strlen("/") + 2 * sizeof(pthread_t) + strlen("_queue") + 1);
   size_t plen = 0;
   plen += snprintf(out, len - plen, "/");
-  for(unsigned char *cp  = (unsigned char*)thread;
-      cp < ((unsigned char*)thread) + sizeof(pthread_t); cp++) {
+  for(unsigned char *cp  = (unsigned char *)thread;
+      cp < ((unsigned char *)thread) + sizeof(pthread_t); cp++) {
     plen += snprintf(out + plen, len - plen, "%02X", *cp);
     if(plen == len)
       return;

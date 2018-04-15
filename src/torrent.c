@@ -295,7 +295,7 @@ void torrent_free(torrent_t *torrent)
 
 unsigned torrent_left_to_download(torrent_t *torrent)
 {
-  //TODO
+  // TODO
   return 0;
 }
 
@@ -303,6 +303,7 @@ unsigned char *torrent_make_bitfield(const torrent_t *torrent)
 {
   unsigned num_pieces = dict_get_size(torrent->pieces);
   unsigned len = LBITFIELD_NUM_BYTES(num_pieces);
+  // calloc memory is set to zero
   unsigned char *ret = (unsigned char *)calloc(len, 1);
 
   if (!ret)
