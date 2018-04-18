@@ -355,6 +355,7 @@ int torrent_next_request(torrent_t *torrent, unsigned char *peer_have_bf, unsign
   unsigned ret;
 
   pthread_mutex_lock(&torrent->sh_lock);
+
   for (int i = 0; i < dict_get_size(torrent->pieces); i++) {
     if (torrent->sh.piece_states[i] == PIECE_STATE_REQUESTED && LBITFIELD_ISSET(i, peer_have_bf)) {
       r = i;
@@ -384,7 +385,7 @@ int torrent_next_request(torrent_t *torrent, unsigned char *peer_have_bf, unsign
   return 0;
 }
 
-//temp
+// temp
 void print_torrent(torrent_t *torrent)
 {
   printf("TORRENT DETAILS:\n");

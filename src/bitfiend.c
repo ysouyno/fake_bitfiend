@@ -185,7 +185,7 @@ torrent_t *bitfiend_add_torrent(const char *metafile, const char *destdir)
     goto fail_create;
 
   pthread_mutex_lock(&s_torrents_lock);
-  list_add(s_torrents, (unsigned char*)&torrent, sizeof(torrent_t*));
+  list_add(s_torrents, (unsigned char *)&torrent, sizeof(torrent_t *));
   pthread_mutex_unlock(&s_torrents_lock);
 
   log_printf(LOG_LEVEL_INFO, "Torrent added successfully: %s\n", metafile);

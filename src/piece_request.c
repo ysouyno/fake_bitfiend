@@ -94,7 +94,7 @@ piece_request_t *piece_request_create(const torrent_t *torrent, unsigned index)
   skip_until_index(&iter, &offset, index, torrent);
 
   while (block = next_block_request(&iter, &offset, &left, torrent->piece_len)) {
-    list_add(ret->block_requests, (unsigned char*)&block, sizeof(block_request_t*));
+    list_add(ret->block_requests, (unsigned char *)&block, sizeof(block_request_t *));
   }
 
   ret->blocks_left = list_get_size(ret->block_requests);
@@ -105,7 +105,7 @@ piece_request_t *piece_request_create(const torrent_t *torrent, unsigned index)
   ;
   const unsigned char *entry;
   FOREACH_ENTRY(entry, ret->block_requests) {
-    free(*(filemem_t**)entry);
+    free(*(filemem_t **)entry);
   }
 
  fail_alloc_list:

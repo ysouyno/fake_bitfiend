@@ -14,9 +14,10 @@
 
 static tracker_announce_request_t *create_tracker_request(const void *arg)
 {
-  const tracker_arg_t *targ = (tracker_arg_t*)arg;
+  const tracker_arg_t *targ = (tracker_arg_t *)arg;
 
-  tracker_announce_request_t *ret = (tracker_announce_request_t *)malloc(sizeof(tracker_announce_request_t));
+  tracker_announce_request_t *ret =
+    (tracker_announce_request_t *)malloc(sizeof(tracker_announce_request_t));
   if (ret) {
     ret->has = 0;
     memcpy(ret->info_hash, targ->torrent->info_hash, sizeof(ret->info_hash));
@@ -61,7 +62,8 @@ static int create_peer_connection(peer_t *peer, torrent_t *torrent)
     goto fail_create;
 
   pthread_mutex_lock(&torrent->sh_lock);
-  list_add(torrent->sh.peer_connections, (unsigned char*)&conn, sizeof(peer_conn_t*));
+  // 3rd param is sizeof(pointer)?
+  list_add(torrent->sh.peer_connections, (unsigned char *)&conn, sizeof(peer_conn_t *));
   pthread_mutex_unlock(&torrent->sh_lock);
 
   return 0;
@@ -92,7 +94,7 @@ static void periodic_announce_cleanup(void *arg)
 
 static void *periodic_announce(void *arg)
 {
-  const tracker_arg_t *targ = (tracker_arg_t*)arg;
+  const tracker_arg_t *targ = (tracker_arg_t *)arg;
   bool completed = false;
   unsigned interval;
 
@@ -136,7 +138,7 @@ static void *periodic_announce(void *arg)
 
       const unsigned char *entry;
       FOREACH_ENTRY(entry, resp->peers) {
-        create_peer_connection(*(peer_t**)entry, targ->torrent);
+        create_peer_connection(*(peer_t **)entry, targ->torrent);
       }
     }
     else {
@@ -163,7 +165,7 @@ static void *periodic_announce(void *arg)
 
 int tracker_connection_create(pthread_t *thread, tracker_arg_t *arg)
 {
-  if (pthread_create(thread, NULL, periodic_announce, (void*)arg))
+  if (pthread_create(thread, NULL, periodic_announce, (void *)arg))
     goto fail_create_thread;
 
   return 0;

@@ -24,7 +24,7 @@ typedef struct node {
 
 struct list {
   node_t *head;
-  unsigned size;
+  unsigned size; // the number of members, means count
 };
 
 static node_t *node_init(void *data, size_t size)
@@ -43,7 +43,7 @@ static void node_free(node_t *node)
   free(node);
 }
 
-list_t *list_init(void)
+list_t *list_init()
 {
   list_t *ret = (list_t *)malloc(sizeof(list_t));
   if (ret) {

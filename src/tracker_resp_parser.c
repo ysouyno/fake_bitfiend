@@ -84,7 +84,7 @@ static list_t *parse_peerlist_list(list_t *list)
       }
 
       if (!strcmp(key, "port")) {
-        uint16_t port = (uint16_t)(*(bencode_obj_t**)val)->data.integer;
+        uint16_t port = (uint16_t)(*(bencode_obj_t **)val)->data.integer;
 
         if (peer->addr.sas.ss_family = AF_INET) {
           peer->addr.sa_in.sin_port = htons(port);
@@ -96,7 +96,7 @@ static list_t *parse_peerlist_list(list_t *list)
     }
 
     if (valid)
-      list_add(peers, (unsigned char*)&peer, sizeof(peer_t*));
+      list_add(peers, (unsigned char *)&peer, sizeof(peer_t *));
     else
       free(peer);
 
@@ -114,7 +114,8 @@ tracker_announce_resp_t *tracker_resp_parse(const byte_str_t *raw)
   if (!obj)
     goto fail_parse;
 
-  tracker_announce_resp_t *ret = (tracker_announce_resp_t *)malloc(sizeof(tracker_announce_resp_t));
+  tracker_announce_resp_t *ret =
+    (tracker_announce_resp_t *)malloc(sizeof(tracker_announce_resp_t));
   if (!ret)
     goto fail_alloc;
   memset(ret, 0, sizeof(*ret));
@@ -125,49 +126,49 @@ tracker_announce_resp_t *tracker_resp_parse(const byte_str_t *raw)
 
   FOREACH_KEY_AND_VAL(key, val, obj->data.dictionary) {
     if (!strcmp(key, "failure reason")) {
-      char *str = (char*)(*(bencode_obj_t**)val)->data.string->str;
+      char *str = (char *)(*(bencode_obj_t **)val)->data.string->str;
       ret->failure_reason = (char *)malloc(strlen(str) + 1);
       memcpy(ret->failure_reason, str, strlen(str) + 1);
       SET_HAS(ret, RESPONSE_HAS_FAILURE_REASON);
     }
 
     if (!strcmp(key, "warning message")) {
-      char *str = (char*)(*(bencode_obj_t**)val)->data.string->str;
+      char *str = (char *)(*(bencode_obj_t **)val)->data.string->str;
       ret->warning_message = (char *)malloc(strlen(str) + 1);
       memcpy(ret->warning_message, str, strlen(str) + 1);
       SET_HAS(ret, RESPONSE_HAS_WARNING_MESSAGE);
     }
 
     if (!strcmp(key, "interval")) {
-      ret->interval = (*(bencode_obj_t**)val)->data.integer;
+      ret->interval = (*(bencode_obj_t **)val)->data.integer;
     }
 
     if (!strcmp(key, "min interval")) {
-      ret->min_interval = ((bencode_obj_t*)val)->data.integer;
+      ret->min_interval = ((bencode_obj_t *)val)->data.integer;
       SET_HAS(ret, RESPONSE_HAS_MIN_INTERVAL);
     }
 
     if (!strcmp(key, "tracker id")) {
-      char *str = (char*)(*(bencode_obj_t**)val)->data.string->str;
+      char *str = (char *)(*(bencode_obj_t **)val)->data.string->str;
       ret->tracker_id = (char *)malloc(strlen(str) + 1);
       memcpy(ret->tracker_id, str, strlen(str) + 1);
       SET_HAS(ret, RESPONSE_HAS_TRACKER_ID);
     }
 
     if (!strcmp(key, "complete")) {
-      ret->complete = (*(bencode_obj_t**)val)->data.integer;
+      ret->complete = (*(bencode_obj_t **)val)->data.integer;
     }
 
     if (!strcmp(key, "incomplete")) {
-      ret->incomplete = (*(bencode_obj_t**)val)->data.integer;
+      ret->incomplete = (*(bencode_obj_t **)val)->data.integer;
     }
 
     if (!strcmp(key, "peers")) {
-      if ((*(bencode_obj_t**)val)->type == BENCODE_TYPE_STRING) {
-        ret->peers = parse_peerlist_str((*(bencode_obj_t**)val)->data.string);
+      if ((*(bencode_obj_t **)val)->type == BENCODE_TYPE_STRING) {
+        ret->peers = parse_peerlist_str((*(bencode_obj_t **)val)->data.string);
       }
       else {
-        ret->peers = parse_peerlist_list((*(bencode_obj_t**)val)->data.list);
+        ret->peers = parse_peerlist_list((*(bencode_obj_t **)val)->data.list);
       }
     }
 

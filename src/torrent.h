@@ -34,7 +34,7 @@ typedef struct torrent {
     torrent_state_t state;
     char *piece_states;
     unsigned pieces_left;
-    list_t *peer_connections;
+    list_t *peer_connections; // peer which i can downloaded from
     unsigned priority;   /* [0-6] */
     float progress;      /* [0-1] */
     float upspeed;       /* bits/sec */

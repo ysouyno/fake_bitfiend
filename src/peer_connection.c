@@ -32,8 +32,8 @@ typedef struct {
   size_t bitlen;
   unsigned blocks_sent;
   unsigned blocks_recvd;
-  queue_t *peer_requests;
-  list_t *local_requests;
+  queue_t *peer_requests; // requests from peer
+  list_t *local_requests; // requests from local
 } conn_state_t;
 
 static conn_state_t *conn_state_init(torrent_t *torrent);
@@ -252,20 +252,20 @@ static int peer_connect(peer_arg_t *arg)
   print_ip(&arg->peer, ipstr, sizeof(ipstr));
 
   sockfd = socket(arg->peer.addr.sas.ss_family, SOCK_STREAM | SOCK_NONBLOCK, 0);
-  if(sockfd < 0)
+  if (sockfd < 0)
     return sockfd;
 
   socklen_t len = 0;
-  if(arg->peer.addr.sas.ss_family == AF_INET) {
+  if (arg->peer.addr.sas.ss_family == AF_INET) {
     len = sizeof(arg->peer.addr.sa_in);
   }
-  else if(arg->peer.addr.sas.ss_family == AF_INET6) {
+  else if (arg->peer.addr.sas.ss_family == AF_INET6) {
     len = sizeof(arg->peer.addr.sa_in6);
   }
 
   int ret;
   ret = connect(sockfd, &arg->peer.addr.sa, len);
-  if(!(ret == 0 || errno == EINPROGRESS))
+  if (!(ret == 0 || errno == EINPROGRESS))
     goto fail;
 
   fd_set fdset;
@@ -285,7 +285,7 @@ static int peer_connect(peer_arg_t *arg)
       goto fail;
   }
   else {
-    /*Timeout*/
+    /* Timeout */
     log_printf(LOG_LEVEL_INFO, "Peer (%s) connection attempt timed out after %u seconds\n",
                ipstr, PEER_CONNECT_TIMEOUT_SEC);
     goto fail;
@@ -311,7 +311,7 @@ static int peer_connect(peer_arg_t *arg)
 
 static int handshake(int sockfd, peer_arg_t *parg, char peer_id[20], char info_hash[20], torrent_t **out)
 {
-  if (parg->has_torrent) {
+  if (parg->has_torrent) { // download from peer
     *out = parg->torrent;
 
     if (peer_send_handshake(sockfd, (*out)->info_hash)) {
@@ -324,7 +324,7 @@ static int handshake(int sockfd, peer_arg_t *parg, char peer_id[20], char info_h
       return -1;
     }
   }
-  else {
+  else { // upload to peer
     /* Need cancellation point around this recv, otherwise it can be observed that
      * the threads hangs in the recv call forever after being cancelled */
     pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, NULL);
@@ -349,8 +349,8 @@ static int handshake(int sockfd, peer_arg_t *parg, char peer_id[20], char info_h
       return -1;
 
     if (peer_recv_buff(sockfd, peer_id, 20)) {
-      /* Did not receive last 20 bytes, the peer id*/
-      /* This was likely the tracker probing us, drop the connection*/
+      /* Did not receive last 20 bytes, the peer id
+       * This was likely the tracker probing us, drop the connection */
       return -1;
     }
   }
@@ -828,11 +828,12 @@ static int send_requests(int sockfd, conn_state_t *state, torrent_t *torrent)
     log_printf(LOG_LEVEL_INFO, "Sending request for piece %u\n", req_index);
 
     piece_request_t *request = piece_request_create(torrent, req_index);
-    list_add(state->local_requests, (unsigned char*)&request, sizeof(piece_request_t*));
+    // 3rd param is sizeof(pointer)?
+    list_add(state->local_requests, (unsigned char *)&request, sizeof(piece_request_t *));
 
     const unsigned char *entry;
     FOREACH_ENTRY(entry, request->block_requests) {
-      block_request_t *br = *(block_request_t**)entry;
+      block_request_t *br = *(block_request_t **)entry;
 
       peer_msg_t tosend;
       tosend.type = MSG_REQUEST;
@@ -1013,7 +1014,7 @@ static void *peer_connection(void *arg)
   pthread_setcancelstate(PTHREAD_CANCEL_DISABLE, NULL);
   pthread_cleanup_push(peer_connection_cleanup, arg);
   {
-    peer_arg_t *parg = (peer_arg_t*)arg;
+    peer_arg_t *parg = (peer_arg_t *)arg;
     char ipstr[INET6_ADDRSTRLEN];
     print_ip(&parg->peer, ipstr, sizeof(ipstr));
 
@@ -1029,7 +1030,7 @@ static void *peer_connection(void *arg)
       sockfd = parg->sockfd;
     }
     else {
-      if((sockfd = peer_connect(arg)) < 0)
+      if ((sockfd = peer_connect(arg)) < 0)
         goto fail_init;
 
       parg->sockfd = sockfd;
@@ -1052,6 +1053,7 @@ static void *peer_connection(void *arg)
     state = conn_state_init(torrent);
     if (!state)
       goto fail_init;
+
     pthread_cleanup_push(conn_state_cleanup, state);
     {
       printf("local bitfield: ");
@@ -1060,7 +1062,7 @@ static void *peer_connection(void *arg)
       }
       printf("\n");
 
-      // send the initial bitfield:
+      // send the initial bitfield
       peer_msg_t bitmsg;
       bitmsg.type = MSG_BITFIELD;
       bitmsg.payload.bitfield = byte_str_new(LBITFIELD_NUM_BYTES(state->bitlen), state->local_have);

@@ -419,7 +419,7 @@ void print_tracker_response(tracker_announce_resp_t *resp)
 
   const unsigned char *entry;
   FOREACH_ENTRY(entry, resp->peers) {
-    peer_t *peer = *((peer_t**)entry);
+    peer_t *peer = *((peer_t **)entry);
 
     char buff[INET6_ADDRSTRLEN];
     uint16_t port;
