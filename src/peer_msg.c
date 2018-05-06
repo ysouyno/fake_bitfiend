@@ -409,6 +409,7 @@ int peer_msg_send(int sockfd, peer_msg_t *msg, const torrent_t *torrent)
   if (peer_send_buff(sockfd, &out, 1))
     return -1;
 
+  // send <payload>
   switch (msg->type) {
   case MSG_CHOKE:
   case MSG_UNCHOKE:

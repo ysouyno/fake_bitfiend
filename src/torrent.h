@@ -21,6 +21,11 @@ typedef enum {
 } piece_state_t;
 
 typedef struct torrent {
+  /* https://wiki.theory.org/index.php/BitTorrentSpecification#Metainfo_File_Structure
+   *
+   * pieces: string consisting of the concatenation of all 20-byte SHA1 hash values,
+   * one per piece (byte string, i.e. not urlencoded)
+   */
   dict_t *pieces;
   unsigned piece_len;
   list_t *files;

@@ -13,6 +13,7 @@ unsigned char *dict_get(dict_t *dict, const char *key);
 void *dict_remove(dict_t *dict, const char *key);
 void dict_rehash(dict_t *dict, size_t newsize);
 unsigned dict_get_size(dict_t *dict);
+unsigned dict_get_binsize(dict_t *dict);
 
 /* Gives a unique 8-char ascii string for each uint32_t, allowing to use uint32_t as keys,
  * should not be mixed with arbitrary string keys in a single dict */

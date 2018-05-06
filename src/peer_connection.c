@@ -1037,6 +1037,7 @@ static void *peer_connection(void *arg)
       parg->sockfd = sockfd;
       parg->has_sockfd = true;
     }
+
     if (sockfd < 0)
       goto fail_init;
 
@@ -1062,6 +1063,9 @@ static void *peer_connection(void *arg)
         printf("%02X", (unsigned char) state->local_have[i]);
       }
       printf("\n");
+
+      printf("dict_get_size(torrent->pieces): %d\n", dict_get_size(torrent->pieces));
+      printf("dict_get_binsize(torrent->pieces): %d\n", dict_get_binsize(torrent->pieces));
 
       // send the initial bitfield
       peer_msg_t bitmsg;
@@ -1118,7 +1122,7 @@ static void *peer_connection(void *arg)
 
 int peer_connection_create(pthread_t *thread, peer_arg_t *arg)
 {
-  if (pthread_create(thread, NULL, peer_connection, (void*)arg))
+  if (pthread_create(thread, NULL, peer_connection, (void *)arg))
     goto fail_create_thread;
 
   return 0;

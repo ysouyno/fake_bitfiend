@@ -112,6 +112,7 @@ static bencode_obj_t *bencode_parse_int(const char *benc, const char **endptr)
 
   ret->type = BENCODE_TYPE_INT;
   ret->data.integer = i;
+
   return ret;
 }
 
@@ -124,7 +125,7 @@ static bencode_obj_t *bencode_parse_dict(const char *benc, const char **endptr)
 
   ret = bencode_obj_create();
   ret->type = BENCODE_TYPE_DICT;
-  /* Dict of size 1 (bin)  will preserve the alphabetical ordering of the keys for iteration */
+  /* Dict of size 1 (bin) will preserve the alphabetical ordering of the keys for iteration */
   ret->data.dictionary = dict_init(1);
   assert(ret->data.dictionary);
 
@@ -139,14 +140,14 @@ static bencode_obj_t *bencode_parse_dict(const char *benc, const char **endptr)
     assert(value);
     assert(*endptr > benc);
 
-    if (!strcmp((char*)key->data.string->str, "info")) {
+    if (!strcmp((char *)key->data.string->str, "info")) {
       assert(benc[0] == 'd');
       assert((*endptr)[-1] == 'e');
       sha1_compute(benc, *endptr - benc, (char *)(value->sha1));
     }
 
-    dict_add(ret->data.dictionary, (char*)key->data.string->str,
-             (unsigned char*)&value, sizeof(value));
+    dict_add(ret->data.dictionary, (char *)key->data.string->str,
+             (unsigned char *)&value, sizeof(value));
 
     bencode_free_obj_and_data_recursive(key);
   }
@@ -175,7 +176,7 @@ static bencode_obj_t *bencode_parse_list(const char *benc, const char **endptr)
     bencode_obj_t *elem = bencode_parse_object(benc, endptr);
     assert(elem);
 
-    list_add(ret->data.list, (unsigned char*)&elem, sizeof(elem));
+    list_add(ret->data.list, (unsigned char *)&elem, sizeof(elem));
   }
 
   assert(**endptr == 'e');

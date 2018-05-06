@@ -38,7 +38,7 @@ typedef struct dict_entry {
 } dict_entry_t;
 
 struct dict {
-  unsigned size;
+  unsigned size; // it means count
   unsigned binsize;
   dict_entry_t **bins;
 };
@@ -94,7 +94,7 @@ dict_t *dict_init(size_t binsize)
   if (ret) {
     ret->size = 0;
     ret->binsize = binsize;
-    ret->bins = (dict_entry_t **)calloc(binsize, sizeof(dict_entry_t*));
+    ret->bins = (dict_entry_t **)calloc(binsize, sizeof(dict_entry_t *));
     if (!ret->bins) {
       free(ret);
       ret = NULL;
@@ -204,9 +204,15 @@ void dict_rehash(dict_t *dict, size_t newsize)
   dict->bins = newbins;
 }
 
+// get the count of items in the dictionary
 unsigned dict_get_size(dict_t *dict)
 {
   return dict->size;
+}
+
+unsigned dict_get_binsize(dict_t *dict)
+{
+  return dict->binsize;
 }
 
 const dict_iter_t *dict_iter_first(const dict_t *dict)

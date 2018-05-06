@@ -18,7 +18,10 @@
 #include "piece_request.h"
 #include "sha1.h"
 
+#if defined(_MSC_VER)
 #pragma warning(disable: 4996)
+#else
+#endif
 
 static dict_t *create_piece_dict(byte_str_t *raw);
 static int populate_files_from_list(torrent_t *torrent, list_t *files, const char *destdir, const char *name);
@@ -36,9 +39,10 @@ static dict_t *create_piece_dict(byte_str_t *raw)
     byte_str_t *entry = byte_str_new(20, raw->str + i);
     if (!entry)
       goto fail_alloc_str;
+
     char key[9];
     dict_key_for_uint32((i / 20), key, sizeof(key));
-    dict_add(ret, key, (unsigned char*)&entry, sizeof(byte_str_t*));
+    dict_add(ret, key, (unsigned char *)&entry, sizeof(byte_str_t *));
   }
 
   return ret;
@@ -48,7 +52,7 @@ static dict_t *create_piece_dict(byte_str_t *raw)
   const char *key;
   const unsigned char *val;
   FOREACH_KEY_AND_VAL(key, val, ret) {
-    byte_str_free(*(byte_str_t**)val);
+    byte_str_free(*(byte_str_t **)val);
   }
   dict_free(ret);
 
@@ -148,27 +152,27 @@ static int populate_from_info_dic(torrent_t *torrent, dict_t *info, const char *
 
   FOREACH_KEY_AND_VAL(key, val, info) {
     if (!strcmp(key, "name")) {
-      name = (char*)(*(bencode_obj_t**)val)->data.string->str;
+      name = (char *)(*(bencode_obj_t **)val)->data.string->str;
     }
   }
 
   FOREACH_KEY_AND_VAL(key, val, info) {
     if (!strcmp(key, "pieces")) {
-      torrent->pieces = create_piece_dict((*(bencode_obj_t**)val)->data.string);
+      torrent->pieces = create_piece_dict((*(bencode_obj_t **)val)->data.string);
     }
 
     if (!strcmp(key, "piece length")) {
-      torrent->piece_len = (*(bencode_obj_t**)val)->data.integer;
+      torrent->piece_len = (*(bencode_obj_t **)val)->data.integer;
     }
 
     if (!strcmp(key, "length")) {
-      len = (*(bencode_obj_t**)val)->data.integer;
+      len = (*(bencode_obj_t **)val)->data.integer;
     }
 
     if (!strcmp(key, "files")) {
       multifile = true;
 
-      list_t *files = (*(bencode_obj_t**)val)->data.list;
+      list_t *files = (*(bencode_obj_t **)val)->data.list;
       if (populate_files_from_list(torrent, files, destdir, name))
         ret = -1;
     }
@@ -186,7 +190,7 @@ static int populate_from_info_dic(torrent_t *torrent, dict_t *info, const char *
 
     dl_file_t *file = dl_file_create_and_open(len, path);
     if (file)
-      list_add(torrent->files, (unsigned char*)&file, sizeof(dl_file_t*));
+      list_add(torrent->files, (unsigned char *)&file, sizeof(dl_file_t *));
     else
       ret = -1;
   }
@@ -195,6 +199,7 @@ static int populate_from_info_dic(torrent_t *torrent, dict_t *info, const char *
     // strerror_s(errbuff, sizeof(errbuff), errno);
     // log_printf(LOG_LEVEL_ERROR, "%s\n", errbuff);
   }
+
   return ret;
 }
 
@@ -204,13 +209,14 @@ torrent_t *torrent_init(bencode_obj_t *meta, const char *destdir)
   if (!ret)
     goto fail_alloc;
 
+  memset(ret, 0, sizeof(*ret));
+
   const char *key;
   const unsigned char *val;
 
-  memset(ret, 0, sizeof(*ret));
   FOREACH_KEY_AND_VAL(key, val, meta->data.dictionary) {
     if (!strcmp(key, "info")) {
-      bencode_obj_t *info_dic = *((bencode_obj_t**)val);
+      bencode_obj_t *info_dic = *((bencode_obj_t **)val);
       memcpy(ret->info_hash, info_dic->sha1, DIGEST_LEN);
 
       ret->files = list_init();
@@ -218,39 +224,38 @@ torrent_t *torrent_init(bencode_obj_t *meta, const char *destdir)
     }
 
     if (!strcmp(key, "announce")) {
-      byte_str_t *bstr = (*(bencode_obj_t**)val)->data.string;
+      byte_str_t *bstr = (*(bencode_obj_t **)val)->data.string;
       ret->announce = (char *)malloc(bstr->size + 1);
       memcpy(ret->announce, bstr->str, bstr->size);
       ret->announce[bstr->size] = '\0';
     }
 
     if (!strcmp(key, "comment")) {
-      byte_str_t *bstr = (*(bencode_obj_t**)val)->data.string;
+      byte_str_t *bstr = (*(bencode_obj_t **)val)->data.string;
       ret->comment = (char *)malloc(bstr->size + 1);
       memcpy(ret->comment, bstr->str, bstr->size);
       ret->comment[bstr->size] = '\0';
     }
 
     if (!strcmp(key, "created by")) {
-      byte_str_t *bstr = (*(bencode_obj_t**)val)->data.string;
+      byte_str_t *bstr = (*(bencode_obj_t **)val)->data.string;
       ret->created_by = (char *)malloc(bstr->size + 1);
       memcpy(ret->created_by, bstr->str, bstr->size);
       ret->created_by[bstr->size] = '\0';
     }
 
     if (!strcmp(key, "creation date")) {
-      ret->create_date = (*(bencode_obj_t**)val)->data.integer;
+      ret->create_date = (*(bencode_obj_t **)val)->data.integer;
     }
 
     if (!strcmp(key, "announce-list")) {
       log_printf(LOG_LEVEL_WARNING, "Ignoring announce-list key in metainfo file\n");
-      //TODO
+      // TODO
     }
 
     if (!strcmp(key, "encoding")) {
       log_printf(LOG_LEVEL_WARNING, "Ignoring encoding key in metainfo file\n");
-      //assert(0);
-      //TODO
+      // TODO
     }
   }
 

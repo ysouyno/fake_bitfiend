@@ -9,7 +9,7 @@
 #endif
 
 typedef struct byte_str {
-  size_t size;
+  size_t size; // the size of str[]
   unsigned char str[];
 } byte_str_t;
 
