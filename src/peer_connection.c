@@ -810,6 +810,7 @@ static int send_requests(int sockfd, conn_state_t *state, torrent_t *torrent)
 {
   log_printf(LOG_LEVEL_DEBUG, "Sending requests for pieces...\n");
   int n = PEER_NUM_OUTSTANDING_REQUESTS - list_get_size(state->local_requests);
+  log_printf(LOG_LEVEL_DEBUG, "n = %d\n", n);
   if (n <= 0)
     return 0;
 

@@ -67,7 +67,11 @@ static int populate_files_from_list(torrent_t *torrent, list_t *files,
 
   char path[256];
   strcpy(path, destdir);
+#if defined(_MSC_VER)
   strcat(path, "\\");
+#else
+  strcat(path, "/");
+#endif
   strcat(path, name);
   log_printf(LOG_LEVEL_INFO, "Creating directory: %s\n", path);
 #if defined(_MSC_VER)
@@ -77,14 +81,22 @@ static int populate_files_from_list(torrent_t *torrent, list_t *files,
 #endif
 
   FOREACH_ENTRY(entry, files) {
-    dict_t *filedict = (*(bencode_obj_t**)entry)->data.dictionary;
+    dict_t *filedict = (*(bencode_obj_t **)entry)->data.dictionary;
     unsigned len;
 
     char path[512];
     strcpy(path, destdir);
+#if defined(_MSC_VER)
     strcat(path, "\\");
+#else
+    strcat(path, "/");
+#endif
     strcat(path, name);
+#if defined(_MSC_VER)
     strcat(path, "\\");
+#else
+    strcat(path, "/");
+#endif
 
     FOREACH_KEY_AND_VAL(key, val, filedict) {
       if (!strcmp(key, "length")) {
@@ -103,10 +115,11 @@ static int populate_files_from_list(torrent_t *torrent, list_t *files,
           if (i < list_get_size(pathlist) - 1) {
 #if defined(_MSC_VER)
             _mkdir(path);
+            strcat(path, "\\");
 #else
             mkdir(path, 0777);
+            strcat(path, "/");
 #endif
-            strcat(path, "\\");
           }
           i++;
         }
@@ -164,7 +177,11 @@ static int populate_from_info_dic(torrent_t *torrent, dict_t *info, const char *
   if (!multifile) {
     char path[256];
     strcpy(path, destdir);
+#if defined(_MSC_VER)
     strcat(path, "\\");
+#else
+    strcat(path, "/");
+#endif
     strcat(path, name);
 
     dl_file_t *file = dl_file_create_and_open(len, path);

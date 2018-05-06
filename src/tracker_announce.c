@@ -405,8 +405,7 @@ void tracker_announce_resp_free(tracker_announce_resp_t *resp)
   free(resp);
 }
 
-//TEMP
-
+// TEMP
 void print_tracker_response(tracker_announce_resp_t *resp)
 {
   printf("TRACKER RESPONSE:\n");
