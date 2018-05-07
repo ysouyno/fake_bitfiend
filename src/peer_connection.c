@@ -128,7 +128,7 @@ static void conn_state_cleanup(void *arg)
 
   const unsigned char *entry;
   FOREACH_ENTRY(entry, state->local_requests) {
-    piece_request_free(*(piece_request_t**)entry);
+    piece_request_free(*(piece_request_t **)entry);
   }
   list_free(state->local_requests);
 
@@ -212,7 +212,7 @@ static int peer_connect(peer_arg_t *arg)
       goto fail;
   }
   else {
-    /*Timeout*/
+    // Timeout
     log_printf(LOG_LEVEL_INFO, "Peer (%s) connection attempt timed out after %u seconds\n",
                ipstr, PEER_CONNECT_TIMEOUT_SEC);
     goto fail;
@@ -285,7 +285,7 @@ static int peer_connect(peer_arg_t *arg)
       goto fail;
   }
   else {
-    /* Timeout */
+    // Timeout
     log_printf(LOG_LEVEL_INFO, "Peer (%s) connection attempt timed out after %u seconds\n",
                ipstr, PEER_CONNECT_TIMEOUT_SEC);
     goto fail;
@@ -644,12 +644,12 @@ static void process_piece_msg(int sockfd, conn_state_t *state, piece_msg_t *msg,
 
   const unsigned char *entry;
   FOREACH_ENTRY(entry, state->local_requests) {
-    piece_request_t *curr = *(piece_request_t**)entry;
+    piece_request_t *curr = *(piece_request_t **)entry;
 
     if (curr->piece_index == msg->index) {
       const unsigned char *block;
       FOREACH_ENTRY(block, curr->block_requests) {
-        block_request_t *br = *(block_request_t**)block;
+        block_request_t *br = *(block_request_t **)block;
 
         if (br->len == msg->blocklen && br->begin == msg->begin) {
           br->completed = true;
@@ -659,7 +659,7 @@ static void process_piece_msg(int sockfd, conn_state_t *state, piece_msg_t *msg,
       }
 
       if (curr->blocks_left == 0) {
-        /*We've got the entire piece!*/
+        // We've got the entire piece
         log_printf(LOG_LEVEL_INFO, "Got a piece fam!\n");
         bool valid = torrent_sha1_verify(torrent, curr->piece_index);
 
@@ -676,7 +676,7 @@ static void process_piece_msg(int sockfd, conn_state_t *state, piece_msg_t *msg,
         }
 
         piece_request_free(curr);
-        list_remove(state->local_requests, (unsigned char*)&curr);
+        list_remove(state->local_requests, (unsigned char *)&curr);
       }
 
       return;
@@ -809,6 +809,10 @@ static void service_peer_requests(int sockfd, conn_state_t *state, const torrent
 static int send_requests(int sockfd, conn_state_t *state, torrent_t *torrent)
 {
   log_printf(LOG_LEVEL_DEBUG, "Sending requests for pieces...\n");
+
+  /* If there is already a local request to the remote peer, the value of n will be
+   * less than or equal to 0, here for each requesting thread
+   */
   int n = PEER_NUM_OUTSTANDING_REQUESTS - list_get_size(state->local_requests);
   log_printf(LOG_LEVEL_DEBUG, "n = %d\n", n);
   if (n <= 0)
@@ -908,7 +912,7 @@ static void *peer_connection(void *arg)
   pthread_setcancelstate(PTHREAD_CANCEL_DISABLE, NULL);
   pthread_cleanup_push(peer_connection_cleanup, arg);
 
-  peer_arg_t *parg = (peer_arg_t*)arg;
+  peer_arg_t *parg = (peer_arg_t *)arg;
   char ipstr[INET6_ADDRSTRLEN];
   print_ip(&parg->peer, ipstr, sizeof(ipstr));
 
@@ -1003,8 +1007,8 @@ static void *peer_connection(void *arg)
 
  fail_init:
   pthread_cleanup_pop(1);
-
   pthread_exit(NULL);
+
   return NULL;
 }
 
@@ -1139,7 +1143,7 @@ void peer_connection_queue_name(pthread_t thread, char *out, size_t len)
   assert(len >= strlen("\\\\.\\pipe\\") + 2 * sizeof(pthread_t) + strlen("_queue") + 1);
   size_t plen = 0;
   plen += snprintf(out, len - plen, "\\\\.\\pipe\\");
-  for (unsigned char *cp = (unsigned char*)thread.p; cp < ((unsigned char*)thread.p) + sizeof(pthread_t); cp++) {
+  for (unsigned char *cp = (unsigned char *)thread.p; cp < ((unsigned char *)thread.p) + sizeof(pthread_t); cp++) {
     plen += snprintf(out + plen, len - plen, "%02X", *cp);
     if (plen == len)
       return;

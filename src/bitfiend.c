@@ -67,7 +67,7 @@ static int shutdown_torrent(torrent_t *torrent)
   pthread_mutex_unlock(&torrent->sh_lock);
 
   while (iter) {
-    peer_conn_t *conn = *(peer_conn_t**)(list_iter_get_value(iter));
+    peer_conn_t *conn = *(peer_conn_t **)(list_iter_get_value(iter));
     void *ret;
 
     char queue_name[64];
@@ -151,7 +151,7 @@ int bitfiend_shutdown(void)
 
   pthread_mutex_lock(&s_torrents_lock);
   FOREACH_ENTRY(entry, s_torrents) {
-    shutdown_torrent(*(torrent_t**)entry);
+    shutdown_torrent(*(torrent_t **)entry);
   }
   list_free(s_torrents);
   pthread_mutex_unlock(&s_torrents_lock);
@@ -237,7 +237,7 @@ torrent_t *bitfiend_assoc_peer(peer_conn_t *peer, char infohash[20])
       pthread_mutex_unlock(&s_unassoc_peerthreads_lock);
 
       pthread_mutex_lock(&torrent->sh_lock);
-      list_add(torrent->sh.peer_connections, (unsigned char*)&peer, sizeof(peer_conn_t*));
+      list_add(torrent->sh.peer_connections, (unsigned char *)&peer, sizeof(peer_conn_t *));
       ret = torrent;
       pthread_mutex_unlock(&torrent->sh_lock);
 
@@ -253,7 +253,7 @@ torrent_t *bitfiend_assoc_peer(peer_conn_t *peer, char infohash[20])
 void bitfiend_add_unassoc_peer(pthread_t thread)
 {
   pthread_mutex_lock(&s_unassoc_peerthreads_lock);
-  list_add(s_unassoc_peerthreads, (unsigned char*)&thread, sizeof(pthread_t));
+  list_add(s_unassoc_peerthreads, (unsigned char *)&thread, sizeof(pthread_t));
   pthread_mutex_unlock(&s_unassoc_peerthreads_lock);
 }
 
@@ -315,7 +315,7 @@ int bitfiend_notify_peers_have(torrent_t *torrent, unsigned have_index)
   pthread_mutex_lock(&torrent->sh_lock);
 
   FOREACH_ENTRY(entry, torrent->sh.peer_connections) {
-    peer_conn_t *conn = *(peer_conn_t**)entry;
+    peer_conn_t *conn = *(peer_conn_t **)entry;
 
     if (0 == pthread_equal(conn->thread, pthread_self()))
       continue;
@@ -330,9 +330,9 @@ int bitfiend_notify_peers_have(torrent_t *torrent, unsigned have_index)
     if (queue != NULL) {
       // errno! = EAGAIN talk about later
 #if defined(_MSC_VER)
-      if (mq_send(queue, queue_name, (char*)&have_index, sizeof(unsigned), 0)/* && errno != EAGAIN*/)
+      if (mq_send(queue, queue_name, (char *)&have_index, sizeof(unsigned), 0)/* && errno != EAGAIN*/)
 #else
-        if (mq_send(queue, (char*)&have_index, sizeof(unsigned), 0) && errno != EAGAIN)
+        if (mq_send(queue, (char *)&have_index, sizeof(unsigned), 0) && errno != EAGAIN)
 #endif
           log_printf(LOG_LEVEL_ERROR, "Failed to send have event to peer threads\n");
 #if defined(_MSC_VER)

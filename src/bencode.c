@@ -37,7 +37,7 @@ void bencode_free_obj_and_data_recursive(bencode_obj_t *obj)
     const unsigned char *entry;
 
     FOREACH_ENTRY(entry, obj->data.list) {
-      bencode_free_obj_and_data_recursive(*((bencode_obj_t**)entry));
+      bencode_free_obj_and_data_recursive(*((bencode_obj_t **)entry));
     }
 
     list_free(obj->data.list);
@@ -49,7 +49,7 @@ void bencode_free_obj_and_data_recursive(bencode_obj_t *obj)
     const unsigned char *val;
 
     FOREACH_KEY_AND_VAL(key, val, obj->data.dictionary) {
-      bencode_free_obj_and_data_recursive(*((bencode_obj_t**)val));
+      bencode_free_obj_and_data_recursive(*((bencode_obj_t **)val));
     }
 
     dict_free(obj->data.dictionary);
@@ -79,7 +79,7 @@ static bencode_obj_t *bencode_parse_string(const char *benc, const char **endptr
   bencode_obj_t *ret;
   *endptr = benc;
 
-  strl = strtol(benc, (char**)endptr, 10);
+  strl = strtol(benc, (char **)endptr, 10);
   assert(**endptr == ':');
   (*endptr)++;
 
@@ -103,7 +103,7 @@ static bencode_obj_t *bencode_parse_int(const char *benc, const char **endptr)
   assert(*benc == 'i');
   benc++;
 
-  i = strtol(benc, (char**)endptr, 10);
+  i = strtol(benc, (char **)endptr, 10);
   assert(**endptr == 'e');
   (*endptr)++;
 
@@ -199,7 +199,7 @@ void print_obj(bencode_obj_t *obj)
     printf("Dict: \n");
     FOREACH_KEY_AND_VAL(key, val, obj->data.dictionary) {
       printf("Key: %s\n", key);
-      print_obj(*((bencode_obj_t**)val));
+      print_obj(*((bencode_obj_t **)val));
     }
     break;
   }
@@ -208,7 +208,7 @@ void print_obj(bencode_obj_t *obj)
     printf("List: \n");
     FOREACH_ENTRY(entry, obj->data.list) {
       printf("            ");
-      print_obj(*((bencode_obj_t**)entry));
+      print_obj(*((bencode_obj_t **)entry));
     }
     break;
   }
