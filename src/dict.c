@@ -54,6 +54,7 @@ static dict_entry_t *dict_entry_init(const char *key, void *value, size_t size)
       free(ret);
       return NULL;
     }
+
     memcpy(ret->key, key, strlen(key) + 1);
     ret->size = size;
     ret->next = NULL;
@@ -178,12 +179,12 @@ void *dict_remove(dict_t *dict, const char *key)
 void dict_rehash(dict_t *dict, size_t newsize)
 {
   dict_entry_t **newbins;
-  newbins = (dict_entry_t **)calloc(newsize, sizeof(dict_entry_t*));
+  newbins = (dict_entry_t **)calloc(newsize, sizeof(dict_entry_t *));
 
   for (unsigned i = 0; i < dict->binsize; i++) {
     FOREACH_ENTRY_AND_PREV_IN_BIN(entry, prev, dict, i) {
       if (prev)
-        prev->next = NULL; /*This node at the end of a new bin*/
+        prev->next = NULL; // This node at the end of a new bin
 
       unsigned hash = hashf(newsize, entry->key);
       if (!newbins[hash]) {
@@ -243,14 +244,14 @@ const dict_iter_t *dict_iter_next(dict_t *dict, const dict_iter_t *iter)
 const unsigned char *dict_iter_get_value(const dict_iter_t *iter)
 {
   size_t offset = offsetof(dict_entry_t, value) - offsetof(dict_entry_t, iter);
-  return (unsigned char*)((unsigned char*)iter + offset);
+  return (unsigned char *)((unsigned char *)iter + offset);
 }
 
 const char *dict_iter_get_key(const dict_iter_t *iter)
 {
   const char *ret;
   size_t offset = offsetof(dict_entry_t, key) - offsetof(dict_entry_t, iter);
-  memcpy(&ret, ((unsigned char*)iter + offset), sizeof(const char *));
+  memcpy(&ret, ((unsigned char *)iter + offset), sizeof(const char *));
   return ret;
 }
 

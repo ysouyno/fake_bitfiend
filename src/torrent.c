@@ -104,16 +104,16 @@ static int populate_files_from_list(torrent_t *torrent, list_t *files,
 
     FOREACH_KEY_AND_VAL(key, val, filedict) {
       if (!strcmp(key, "length")) {
-        len = (*(bencode_obj_t**)val)->data.integer;
+        len = (*(bencode_obj_t **)val)->data.integer;
       }
 
       if (!strcmp(key, "path")) {
         int i = 0;
-        list_t *pathlist = (*(bencode_obj_t**)val)->data.list;
+        list_t *pathlist = (*(bencode_obj_t **)val)->data.list;
         const unsigned char *path_entry;
 
         FOREACH_ENTRY(path_entry, pathlist) {
-          char *str = (char*)(*(bencode_obj_t**)path_entry)->data.string->str;
+          char *str = (char *)(*(bencode_obj_t **)path_entry)->data.string->str;
           strcat(path, str);
 
           if (i < list_get_size(pathlist) - 1) {
@@ -132,7 +132,7 @@ static int populate_files_from_list(torrent_t *torrent, list_t *files,
 
     dl_file_t *file = dl_file_create_and_open(len, path);
     if (file)
-      list_add(torrent->files, (unsigned char*)&file, sizeof(dl_file_t*));
+      list_add(torrent->files, (unsigned char *)&file, sizeof(dl_file_t *));
     else
       return -1;
   }
@@ -287,19 +287,19 @@ void torrent_free(torrent_t *torrent)
   pthread_mutex_destroy(&torrent->sh_lock);
 
   FOREACH_KEY_AND_VAL(key, entry, torrent->pieces) {
-    byte_str_free(*(byte_str_t**)entry);
+    byte_str_free(*(byte_str_t **)entry);
   }
   dict_free(torrent->pieces);
   if (torrent->sh.piece_states)
     free(torrent->sh.piece_states);
 
   FOREACH_ENTRY(entry, torrent->files) {
-    dl_file_close_and_free(*(dl_file_t**)entry);
+    dl_file_close_and_free(*(dl_file_t **)entry);
   }
   list_free(torrent->files);
 
   FOREACH_ENTRY(entry, torrent->sh.peer_connections) {
-    free(*(peer_conn_t**)entry);
+    free(*(peer_conn_t **)entry);
   }
   list_free(torrent->sh.peer_connections);
 
@@ -345,19 +345,19 @@ bool torrent_sha1_verify(const torrent_t *torrent, unsigned index)
 
   char key[9];
   dict_key_for_uint32((uint32_t)index, key, sizeof(key));
-  byte_str_t *piece_hash = *(byte_str_t**)dict_get(torrent->pieces, key);
+  byte_str_t *piece_hash = *(byte_str_t **)dict_get(torrent->pieces, key);
   piece_request_t *pr = piece_request_create(torrent, index);
   sha1_context_t *ctx = sha1_context_init();
 
   const unsigned char *entry;
   FOREACH_ENTRY(entry, pr->block_requests) {
-    block_request_t *br = *(block_request_t**)entry;
+    block_request_t *br = *(block_request_t **)entry;
 
     const unsigned char *mementry;
     FOREACH_ENTRY(mementry, br->filemems) {
-      filemem_t fmem = *(filemem_t*)mementry;
+      filemem_t fmem = *(filemem_t *)mementry;
 
-      sha1_update(ctx, (const unsigned char*)fmem.mem, fmem.size);
+      sha1_update(ctx, (const unsigned char *)fmem.mem, fmem.size);
     }
   }
   unsigned char sha1_digest[DIGEST_LEN];

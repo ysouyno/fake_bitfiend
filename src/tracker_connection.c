@@ -78,7 +78,7 @@ static int create_peer_connection(peer_t *peer, torrent_t *torrent)
 static void periodic_announce_cleanup(void *arg)
 {
   log_printf(LOG_LEVEL_INFO, "Sending one last \"stopped\" event to tracker\n");
-  const tracker_arg_t *targ = (tracker_arg_t*)arg;
+  const tracker_arg_t *targ = (tracker_arg_t *)arg;
 
   tracker_announce_request_t *req = create_tracker_request(arg);
   req->event = TORRENT_EVENT_STOPPED;

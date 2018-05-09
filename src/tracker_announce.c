@@ -190,7 +190,7 @@ static byte_str_t *content_from_chunked(char *buff)
 #else
   line = strtok_r(buff, "\r\n", &saveptr);
 #endif
-  chunk_sz = strtoul(line, (char**)NULL, 16);
+  chunk_sz = strtoul(line, (char **)NULL, 16);
   while (chunk_sz > 0) {
 #if defined(_MSC_VER)
     line = strtok_s(NULL, "\r\n", &saveptr);
@@ -205,7 +205,7 @@ static byte_str_t *content_from_chunked(char *buff)
 #else
     line = strtok_r(NULL, "\r\n", &saveptr);
 #endif
-    chunk_sz = strtoul(line, (char**)NULL, 16);
+    chunk_sz = strtoul(line, (char **)NULL, 16);
   }
 
   byte_str_t *ret = byte_str_new(newsize, (const unsigned char *)newbuff);
@@ -397,7 +397,7 @@ void tracker_announce_resp_free(tracker_announce_resp_t *resp)
 
   const unsigned char *entry;
   FOREACH_ENTRY(entry, resp->peers) {
-    peer_t *peer = *((peer_t**)entry);
+    peer_t *peer = *((peer_t **)entry);
     free(peer);
   }
   list_free(resp->peers);

@@ -35,7 +35,7 @@ static list_t *parse_peerlist_str(byte_str_t *raw)
 
     memset(peer->peer_id, 0, sizeof(peer->peer_id));
 
-    list_add(peers, (unsigned char*)&peer, sizeof(peer));
+    list_add(peers, (unsigned char *)&peer, sizeof(peer));
   }
 
   return peers;
@@ -52,7 +52,7 @@ static list_t *parse_peerlist_list(list_t *list)
 
   const unsigned char *entry;
   FOREACH_ENTRY(entry, list) {
-    bencode_obj_t *peer_dict = *((bencode_obj_t**)entry);
+    bencode_obj_t *peer_dict = *((bencode_obj_t **)entry);
     peer_t *peer = (peer_t *)malloc(sizeof(peer_t));
     bool valid = true;
 
@@ -60,11 +60,11 @@ static list_t *parse_peerlist_list(list_t *list)
     const unsigned char *val;
     FOREACH_KEY_AND_VAL(key, val, peer_dict->data.dictionary) {
       if (!strcmp(key, "peer id") || !strcmp(key, "id")) {
-        memcpy(peer->peer_id, (*(bencode_obj_t**)val)->data.string->str, sizeof(peer->peer_id));
+        memcpy(peer->peer_id, (*(bencode_obj_t **)val)->data.string->str, sizeof(peer->peer_id));
       }
 
       if (!strcmp(key, "ip")) {
-        char *ipstr = (char*)(*(bencode_obj_t**)val)->data.string->str;
+        char *ipstr = (char *)(*(bencode_obj_t **)val)->data.string->str;
         struct addrinfo hint, *res = NULL;
 
         memset(&hint, 0, sizeof(hint));

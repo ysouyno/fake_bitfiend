@@ -138,5 +138,5 @@ const list_iter_t *list_iter_next(const list_iter_t *iter)
 const unsigned char *list_iter_get_value(const list_iter_t *iter)
 {
   size_t offset = offsetof(struct node, data) - offsetof(struct node, next);
-  return (unsigned char*)((unsigned char*)iter + offset);
+  return (unsigned char *)((unsigned char *)iter + offset);
 }

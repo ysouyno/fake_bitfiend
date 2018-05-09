@@ -46,8 +46,13 @@ static torrent_file_t *torrent_file_open(const char *path)
     goto fail_open;
   fstat(fd, &stats);
 
-  HANDLE file_handle = CreateFileA(path, GENERIC_READ | GENERIC_WRITE,
-                                   FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
+  HANDLE file_handle = CreateFileA(path,
+                                   GENERIC_READ | GENERIC_WRITE,
+                                   FILE_SHARE_READ | FILE_SHARE_WRITE,
+                                   NULL,
+                                   OPEN_EXISTING,
+                                   FILE_ATTRIBUTE_NORMAL,
+                                   NULL);
   if (INVALID_HANDLE_VALUE == file_handle) {
     printf("CreateFileA error: %d\n", GetLastError());
     goto fail_open;

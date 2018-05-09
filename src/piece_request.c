@@ -8,7 +8,7 @@ static void skip_until_index(const list_iter_t **iter, off_t *offset, unsigned i
 {
   size_t skip = torrent->piece_len * index;
   while (skip > 0) {
-    dl_file_t *file = *((dl_file_t**)list_iter_get_value(*iter));
+    dl_file_t *file = *((dl_file_t **)list_iter_get_value(*iter));
     assert(file);
     filemem_t mem;
     dl_file_getfilemem(file, &mem);
@@ -46,12 +46,12 @@ static block_request_t *next_block_request(const list_iter_t **iter, off_t *offs
   unsigned curr_size = 0;
 
   do {
-    dl_file_t *file = *((dl_file_t**)list_iter_get_value(*iter));
+    dl_file_t *file = *((dl_file_t **)list_iter_get_value(*iter));
     assert(file);
     filemem_t  mem;
     dl_file_getfilemem(file, &mem);
 
-    mem.mem = ((char*)mem.mem + *offset);
+    mem.mem = ((char *)mem.mem + *offset);
     mem.size -= *offset;
 
     if (mem.size > PEER_REQUEST_SIZE - curr_size) {
@@ -64,7 +64,7 @@ static block_request_t *next_block_request(const list_iter_t **iter, off_t *offs
     }
 
     *left -= mem.size;
-    list_add(ret->filemems, (unsigned char*)&mem, sizeof(filemem_t));
+    list_add(ret->filemems, (unsigned char *)&mem, sizeof(filemem_t));
     curr_size += mem.size;
   }
   while (curr_size < PEER_REQUEST_SIZE && *iter != NULL);
@@ -118,7 +118,7 @@ void piece_request_free(piece_request_t *request)
 {
   const unsigned char *entry;
   FOREACH_ENTRY(entry, request->block_requests) {
-    block_request_t *br = *(block_request_t**)entry;
+    block_request_t *br = *(block_request_t **)entry;
     list_free(br->filemems); /* The filemems are copied into the list,
                               * no additional heap freeing necessary */
     free(br);
@@ -131,7 +131,7 @@ block_request_t *piece_request_block_at(piece_request_t *request, off_t offset)
 {
   const unsigned char *entry;
   FOREACH_ENTRY(entry, request->block_requests) {
-    block_request_t *req = *(block_request_t**)entry;
+    block_request_t *req = *(block_request_t **)entry;
 
     if (req->begin == offset)
       return req;

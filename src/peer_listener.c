@@ -137,7 +137,7 @@ static int bind_listener(const uint16_t port)
 
 static void peer_listen_cleanup(void *arg)
 {
-  int sockfd = *(int*)arg;
+  int sockfd = *(int *)arg;
   log_printf(LOG_LEVEL_INFO, "Closing peer listener socket (fd: %d)\n", sockfd);
 #if defined(_MSC_VER)
   closesocket(sockfd);
@@ -180,13 +180,13 @@ static void *peer_listen(void *arg)
   char errbuff[64];
 
   pthread_setcancelstate(PTHREAD_CANCEL_DISABLE, NULL);
-  if ((sockfd = bind_listener(*(const uint16_t*)arg)) < 0)
+  if ((sockfd = bind_listener(*(const uint16_t *)arg)) < 0)
     goto fail_bind;
 
   if (listen(sockfd, LISTEN_QUEUE_SIZE) < 0)
     goto fail_listen;
 
-  pthread_cleanup_push(peer_listen_cleanup, (void*)&sockfd);
+  pthread_cleanup_push(peer_listen_cleanup, (void *)&sockfd);
 
   while (true) {
     log_printf(LOG_LEVEL_INFO, "Listening for incoming peer connections...\n");
@@ -229,7 +229,7 @@ static void *peer_listen(void *arg)
 
 int peer_listener_create(pthread_t *thread, const uint16_t *port)
 {
-  if (pthread_create(thread, NULL, peer_listen, (void*)port))
+  if (pthread_create(thread, NULL, peer_listen, (void *)port))
     goto fail_create_thread;
 
   return 0;
