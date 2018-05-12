@@ -7,6 +7,7 @@
 #include "bencode.h"
 
 #define DEFAULT_PRIORITY 3
+#define DEFAULT_MAX_PEERS 50
 
 typedef enum {
   TORRENT_STATE_LEECHING,
@@ -35,6 +36,7 @@ typedef struct torrent {
   char *created_by;
   uint32_t create_date;
   pthread_t tracker_thread;
+  unsigned max_peers;
   struct {
     torrent_state_t state;
     char *piece_states;

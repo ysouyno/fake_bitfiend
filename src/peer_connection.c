@@ -378,29 +378,6 @@ static void peer_connection_cleanup(void *arg)
   free(arg);
 }
 
-/*
-  static mqd_t peer_queue_open(int flags)
-  {
-  mqd_t ret;
-  char queue_name[64];
-  peer_connection_queue_name(pthread_self(), queue_name, sizeof(queue_name));
-
-  struct mq_attr attr;
-  attr.mq_flags = O_NONBLOCK;
-  attr.mq_maxmsg = 10;
-  attr.mq_msgsize = sizeof(unsigned);
-  attr.mq_curmsgs = 0;
-
-  ret = mq_open(queue_name, flags, 0600, &attr);
-  if (ret != (mqd_t)-1)
-  log_printf(LOG_LEVEL_INFO, "Successfully opened message queue from receiver thread: %s\n", queue_name);
-  else
-  log_printf(LOG_LEVEL_ERROR, "Failed to open queue in receiver thread: %s\n", queue_name);
-
-  return ret;
-  }
-*/
-
 #if defined(_MSC_VER)
 
 static HANDLE peer_queue_open(DWORD flags)
@@ -452,7 +429,7 @@ static mqd_t peer_queue_open(int flags)
   if(ret != (mqd_t)-1)
     log_printf(LOG_LEVEL_INFO, "Successfully opened message queue from receiver thread: %s\n", queue_name);
   else {
-    log_printf(LOG_LEVEL_DEBUG, "Failed to open queue in receiver thread: %s\n", queue_name);
+    log_printf(LOG_LEVEL_WARNING, "Failed to open queue in receiver thread: %s\n", queue_name);
     perror("mq_open");
   }
 
@@ -461,24 +438,18 @@ static mqd_t peer_queue_open(int flags)
 
 #endif
 
-/*
-  static void service_have_events(int sockfd, mqd_t queue, const torrent_t *torrent, unsigned char *havebf)
-  {
-  uint32_t have;
-  peer_msg_t msg;
-  msg.type = MSG_HAVE;
-  int ret;
+static void queue_cleanup(void *arg)
+{
+  char queue_name[64] = {0};
 
-  while ((ret = mq_receive(queue, (char*)&have, sizeof(uint32_t), 0)) == sizeof(uint32_t))
-  {
-  msg.payload.have = have;
-  LBITFIELD_SET(have, havebf);
-  if (peer_msg_send(sockfd, &msg, torrent))
-  break;
-  log_printf(LOG_LEVEL_INFO, "event serviced!: have sent to peer: %u\n", have);
+  peer_connection_queue_name(pthread_self(), queue_name, sizeof(queue_name));
+  if (mq_unlink(queue_name)) {
+    log_printf(LOG_LEVEL_ERROR, "Failed to close queue: %s\n", queue_name);
   }
+  else {
+    log_printf(LOG_LEVEL_DEBUG, "Successfully closed queue: %s\n", queue_name);
   }
-*/
+}
 
 #if defined(_MSC_VER)
 static void service_have_events(int sockfd, HANDLE queue, const torrent_t *torrent, unsigned char *havebf)
@@ -493,62 +464,6 @@ static void service_have_events(int sockfd, HANDLE queue, const torrent_t *torre
   BOOL bRet = FALSE;
   char szIn[256] = { 0 };
   DWORD cbRead = 0;
-
-  /*
-    hEvent = CreateEvent(
-    NULL,  // no security attributes
-    TRUE,  // manual reset event
-    FALSE, // not-signalled
-    NULL); // no name
-
-    memset(&os, 0, sizeof(OVERLAPPED));
-    os.hEvent = hEvent;
-    ResetEvent(hEvent);
-
-    ConnectNamedPipe(queue, &os);
-
-    if (GetLastError() == ERROR_IO_PENDING)
-    {
-    WaitForSingleObject(hEvent, 0);
-
-    memset(&os, 0, sizeof(OVERLAPPED));
-    os.hEvent = hEvent;
-    ResetEvent(hEvent);
-
-    bRet = ReadFile(
-    queue,        // file to read from
-    szIn,         // address of input buffer
-    sizeof(szIn), // number of bytes to read
-    &cbRead,      // number of bytes read
-    &os);         // overlapped stuff, not needed
-
-    if (!bRet && (GetLastError() == ERROR_IO_PENDING))
-    {
-    printf("WaitForSingleObject INFINITE\n");
-    WaitForSingleObject(hEvent, INFINITE);
-
-    msg.payload.have = have;
-    LBITFIELD_SET(have, havebf);
-    if (peer_msg_send(sockfd, &msg, torrent))
-    {
-    CloseHandle(hEvent);
-    }
-
-    log_printf(LOG_LEVEL_INFO, "event serviced!: have sent to peer: %u\n", have);
-    CloseHandle(hEvent);
-    }
-    else
-    {
-    printf("ReadFile failed: %d\n", GetLastError());
-    CloseHandle(hEvent);
-    }
-    }
-    else
-    {
-    printf("ConnectNamedPipe failed: %d\n", GetLastError());
-    CloseHandle(hEvent);
-    }
-  */
 
   BOOL fConnected = ConnectNamedPipe(queue, NULL) ?
     TRUE : (GetLastError() == ERROR_PIPE_CONNECTED);
@@ -811,8 +726,7 @@ static int send_requests(int sockfd, conn_state_t *state, torrent_t *torrent)
   log_printf(LOG_LEVEL_DEBUG, "Sending requests for pieces...\n");
 
   /* If there is already a local request to the remote peer, the value of n will be
-   * less than or equal to 0, here for each requesting thread
-   */
+   * less than or equal to 0, here for each requesting thread */
   int n = PEER_NUM_OUTSTANDING_REQUESTS - list_get_size(state->local_requests);
   log_printf(LOG_LEVEL_DEBUG, "n = %d\n", n);
   if (n <= 0)
@@ -1055,63 +969,70 @@ static void *peer_connection(void *arg)
     if (queue == (mqd_t)-1)
       goto fail_init;
 
-    /* Init state */
-    state = conn_state_init(torrent);
-    if (!state)
-      goto fail_init;
-
-    pthread_cleanup_push(conn_state_cleanup, state);
+    pthread_cleanup_push(queue_cleanup, NULL);
     {
-      printf("local bitfield: ");
-      for (int i = 0; i < LBITFIELD_NUM_BYTES(dict_get_size(torrent->pieces)); i++) {
-        printf("%02X", (unsigned char) state->local_have[i]);
-      }
-      printf("\n");
+      /* Init state */
+      state = conn_state_init(torrent);
+      if (!state)
+        goto fail_init_state;
 
-      printf("dict_get_size(torrent->pieces): %d\n", dict_get_size(torrent->pieces));
-      printf("dict_get_binsize(torrent->pieces): %d\n", dict_get_binsize(torrent->pieces));
-
-      // send the initial bitfield
-      peer_msg_t bitmsg;
-      bitmsg.type = MSG_BITFIELD;
-      bitmsg.payload.bitfield = byte_str_new(LBITFIELD_NUM_BYTES(state->bitlen), state->local_have);
-      if (peer_msg_send(sockfd, &bitmsg, torrent)) {
-        byte_str_free(bitmsg.payload.bitfield);
-        goto abort_conn;
-      }
-      byte_str_free(bitmsg.payload.bitfield);
-
-      unchoke(sockfd, state, torrent);
-
-      while (true) {
-        pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, NULL);
-        usleep(250 * 1000);
-        pthread_setcancelstate(PTHREAD_CANCEL_DISABLE, NULL);
-
-        service_have_events(sockfd, queue, torrent, state->local_have);
-
-        /* Cancellation point in this func also, will update state based on message contents */
-        if (process_queued_msgs(sockfd, torrent, state))
-          goto abort_conn;
-
-        /* If there are any requests for us to service, we prioritize that */
-        if (queue_get_size(state->peer_requests) > 0) {
-
-          /* Cancellation point in here as well */
-          service_peer_requests(sockfd, state, torrent);
-
-          /* When there are no requests to service, we send out out own */
+      pthread_cleanup_push(conn_state_cleanup, state);
+      {
+        printf("local bitfield: ");
+        for (int i = 0; i < LBITFIELD_NUM_BYTES(dict_get_size(torrent->pieces)); i++) {
+          printf("%02X", (unsigned char) state->local_have[i]);
         }
-        else {
-          if(!state->local.choked && state->local.interested) {
+        printf("\n");
 
-            if(send_requests(sockfd, state, torrent))
-              goto abort_conn;
+        printf("dict_get_size(torrent->pieces): %d\n", dict_get_size(torrent->pieces));
+        printf("dict_get_binsize(torrent->pieces): %d\n", dict_get_binsize(torrent->pieces));
+
+        // send the initial bitfield
+        peer_msg_t bitmsg;
+        bitmsg.type = MSG_BITFIELD;
+        bitmsg.payload.bitfield = byte_str_new(LBITFIELD_NUM_BYTES(state->bitlen), state->local_have);
+        if (peer_msg_send(sockfd, &bitmsg, torrent)) {
+          byte_str_free(bitmsg.payload.bitfield);
+          goto abort_conn;
+        }
+        byte_str_free(bitmsg.payload.bitfield);
+
+        unchoke(sockfd, state, torrent);
+
+        while (true) {
+          pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, NULL);
+          usleep(250 * 1000);
+          pthread_setcancelstate(PTHREAD_CANCEL_DISABLE, NULL);
+
+          service_have_events(sockfd, queue, torrent, state->local_have);
+
+          /* Cancellation point in this func also, will update state based on message contents */
+          if (process_queued_msgs(sockfd, torrent, state))
+            goto abort_conn;
+
+          /* If there are any requests for us to service, we prioritize that */
+          if (queue_get_size(state->peer_requests) > 0) {
+
+            /* Cancellation point in here as well */
+            service_peer_requests(sockfd, state, torrent);
+
+            /* When there are no requests to service, we send out out own */
+          }
+          else {
+            if(!state->local.choked && state->local.interested) {
+
+              if(send_requests(sockfd, state, torrent))
+                goto abort_conn;
+            }
           }
         }
-      }
 
-    abort_conn:
+      abort_conn:
+        ;
+      }
+      pthread_cleanup_pop(1);
+
+    fail_init_state:
       ;
     }
     pthread_cleanup_pop(1);
