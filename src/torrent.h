@@ -60,5 +60,6 @@ unsigned char *torrent_make_bitfield(const torrent_t *torrent);
 bool torrent_sha1_verify(const torrent_t *torrent, unsigned index);
 /* sh_lock of torrent is taken in this function */
 int torrent_next_request(torrent_t *torrent, unsigned char *peer_have_bf, unsigned *out);
+int torrent_complete(torrent_t *torrent);
 
 #endif

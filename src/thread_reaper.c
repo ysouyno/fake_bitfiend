@@ -5,7 +5,7 @@
 #include "peer_connection.h"
 #include "thread_reaper.h"
 
-void reap_periodic_cleanup(void *arg)
+static void reap_periodic_cleanup(void *arg)
 {
   free(arg);
 }

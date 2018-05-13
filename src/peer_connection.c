@@ -539,9 +539,7 @@ static void handle_piece_dl_completion(int sockfd, torrent_t *torrent, unsigned 
   log_printf(LOG_LEVEL_DEBUG, "PIECES LEFT: %u\n", pieces_left);
 
   if (completed) {
-    log_printf(LOG_LEVEL_INFO, "********************************\n");
-    log_printf(LOG_LEVEL_INFO, "Torrent successfully downloaded!\n");
-    log_printf(LOG_LEVEL_INFO, "********************************\n");
+    torrent_complete(torrent);
   }
 
   peer_msg_t tosend;
@@ -616,10 +614,6 @@ static void process_msg(int sockfd, peer_msg_t *msg, conn_state_t *state, torren
   case MSG_INTERESTED:
     state->remote.interested = true;
     log_printf(LOG_LEVEL_DEBUG, "The peer has become interested in us\n");
-
-    /* For now, we unchocke the peer as soon as they become interested */
-    /*if (state->remote.choked)
-      unchoke(sockfd, state, torrent);*/
     break;
   case MSG_NOT_INTERESTED:
     state->remote.interested = false;
@@ -651,7 +645,7 @@ static void process_msg(int sockfd, peer_msg_t *msg, conn_state_t *state, torren
 
     break;
   case MSG_REQUEST:
-    log_printf(LOG_LEVEL_INFO,
+    log_printf(LOG_LEVEL_DEBUG,
                "pushing request:\n"
                "    index: %u\n"
                "    length: %u\n"
@@ -699,7 +693,7 @@ static void service_peer_requests(int sockfd, conn_state_t *state, const torrent
   log_printf(LOG_LEVEL_DEBUG, "Servicing piece requests...\n");
   request_msg_t request;
   while (queue_pop(state->peer_requests, &request) == 0) {
-    log_printf(LOG_LEVEL_INFO,
+    log_printf(LOG_LEVEL_DEBUG,
                "popped request:\n"
                "    index: %u\n"
                "    length: %u\n"
