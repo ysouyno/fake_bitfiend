@@ -20,7 +20,7 @@
       break;                                        \
     while(entry_ptr->next)                          \
       entry_ptr = entry_ptr->next;                  \
-  }while(0)
+  } while(0)
 
 
 struct dict_iter {

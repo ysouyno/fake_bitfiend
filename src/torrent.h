@@ -27,7 +27,7 @@ typedef struct torrent {
    * pieces: string consisting of the concatenation of all 20-byte SHA1 hash values,
    * one per piece (byte string, i.e. not urlencoded)
    */
-  dict_t *pieces;
+  dict_t *pieces; // key: "aaaaaaaa", value: 1st piece's SHA1 hash
   unsigned piece_len;
   list_t *files;
   char info_hash[20];
